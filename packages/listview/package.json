@@ -1,0 +1,9 @@
+{
+  "name": "@mihnea240/listview",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./*": "./*"
+  }
+}

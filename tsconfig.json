@@ -1,0 +1,25 @@
+{
+	"compilerOptions": {
+		"target": "ES2022", // Or higher
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		/* Stage 3 Decorators Settings */
+		"experimentalDecorators": false, // Keep false for Stage 3
+		"emitDecoratorMetadata": false, // Stage 3 does not support this yet
+		"useDefineForClassFields": true,
+		"lib": [
+			"ES2022",
+			"DOM",
+			"ESNext"
+		],
+		"strict": false,
+		"paths": {
+			"@core": [
+				"./packages/core/*"
+			],
+			"@core/*": [
+				"./packages/core/*"
+			],
+		}
+	}
+}

@@ -1,0 +1,31 @@
+{
+	"name": "web-components",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Monorepo of web-components design for personal use",
+	"type": "module",
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "vite",
+		"build": "npm run build --workspaces",
+		"clean": "rm -rf packages/*/dist",
+		"demo": "vite demos/$npm_config_name --open",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/Mihnea240/web-components.git"
+	},
+	"author": "Mihnea",
+	"license": "ISC",
+	"dependencies": {
+		"lit-html": "^3.3.2"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3",
+		"vite": "^7.3.1",
+		"vite-tsconfig-paths": "^6.0.5"
+	}
+}

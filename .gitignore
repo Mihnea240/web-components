@@ -1,0 +1,32 @@
+# Node dependencies
+node_modules/
+
+# Vite and build outputs
+dist/
+build/
+out/
+.vite/
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Editor/IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment files
+.env
+.env.*
+
+# Demo build artifacts
+demos/**/dist/
