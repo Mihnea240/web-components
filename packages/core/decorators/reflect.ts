@@ -1,4 +1,4 @@
-import { getComposedDataSpace, addComposedSetupTask } from "./compose";
+import { getComposedDataSpace, addLifecycleCallback, addSetupOperation } from "./compose";
 
 type PropertyDecoratorMetadataObject = Map<string, {
     prop: string | symbol,
@@ -27,7 +27,6 @@ class PropertyRegistry {
             throw new Error("@reflect can only be applied to accessors");
         }
 
-        addComposedSetupTask(context.metadata, PropertyRegistry.setup);
         this.attr ??= String(context.name);
 
         const metadata = PropertyRegistry.getMetadata(context.metadata);
@@ -36,6 +35,14 @@ class PropertyRegistry {
         }
 
         metadata.set(this.attr, { prop: context.name, mapper: this.mapper });
+
+        // Register static lifecycle callbacks - Sets will deduplicate automatically
+        addLifecycleCallback(context.metadata, 'attributeChangedCallback', PropertyRegistry.attributeChangedCallback);
+        addLifecycleCallback(context.metadata, 'connectedCallback', PropertyRegistry.connectedCallback);
+        
+        // Register setup operations for constructor-level modifications
+        addSetupOperation(context.metadata, PropertyRegistry.setupPropertyDescriptors);
+        addSetupOperation(context.metadata, PropertyRegistry.setupObservedAttributes);
 
         return value;
     }
@@ -57,17 +64,39 @@ class PropertyRegistry {
         propMeta.listeners.push(context.name)
     }
 
-    static setup(constructor: Function, prototype: any) {
-        const metadata = PropertyRegistry.getMetadata(constructor[Symbol.metadata]);
-        console.log(metadata);
-        PropertyRegistry.setupPropertyDescriptors(prototype, metadata);
-        PropertyRegistry.setupObservedAttributes(constructor, metadata);
-        PropertyRegistry.setupAttributeChangedCallback(prototype, metadata);
-        PropertyRegistry.setupInitializer(prototype, metadata);
+    static attributeChangedCallback(this: HTMLElement, attr: string, oldValue: any, newValue: any) {
+        const metadata = PropertyRegistry.getMetadata(this.constructor[Symbol.metadata]);
+        const propMeta = metadata.get(attr);
+        if (propMeta) {
+            if (oldValue === newValue) {
+                return;
+            }
 
+            console.log(`Attribute changed: ${attr} from ${oldValue} to ${newValue}`);
+            const { prop, mapper } = propMeta;
+            const transformedValue = mapper.fromAttribute(newValue);
+            this[prop] = transformedValue;
+        }
     }
 
-    private static setupPropertyDescriptors(prototype: any, metadata: PropertyDecoratorMetadataObject) {
+    static connectedCallback(this: HTMLElement) {
+        const metadata = PropertyRegistry.getMetadata(this.constructor[Symbol.metadata]);
+        for (const [attr, { prop, mapper }] of metadata.entries()) {
+            if (this.hasAttribute(attr)) {
+                const attrValue = this.getAttribute(attr);
+                this[prop] = mapper.fromAttribute(attrValue);
+            } else {
+                const currentValue = this[prop];
+
+                if (currentValue !== undefined && currentValue !== null) {
+                    this.setAttribute(attr, mapper.toAttribute(currentValue));
+                }
+            }
+        }
+    }
+
+    private static setupPropertyDescriptors(constructor: Function, prototype: any) {
+        const metadata = PropertyRegistry.getMetadata(constructor[Symbol.metadata]);
         // Add property descriptors to hook into getter/setter
         for (const [attr, { prop, listeners, mapper }] of metadata.entries()) {
             const descriptor = Object.getOwnPropertyDescriptor(prototype, prop);
@@ -106,7 +135,8 @@ class PropertyRegistry {
         }
     }
 
-    private static setupObservedAttributes(constructor: Function, metadata: PropertyDecoratorMetadataObject) {
+    private static setupObservedAttributes(constructor: Function, prototype: any) {
+        const metadata = PropertyRegistry.getMetadata(constructor[Symbol.metadata]);
         // Overwrite observed attributes
         const attributeSet = new Set<string>(constructor["observedAttributes"] || []);
         for (const attr of metadata.keys()) {
@@ -120,47 +150,6 @@ class PropertyRegistry {
             },
             configurable: true,
         });
-    }
-
-    private static setupAttributeChangedCallback(prototype: any, metadata: PropertyDecoratorMetadataObject) {
-        // Overwrite attributeChangedCallback
-        const originalAttributeChangedCallback = prototype.attributeChangedCallback;
-        prototype.attributeChangedCallback = function (attr: string, oldValue: any, newValue: any) {
-            const propMeta = metadata.get(attr);
-            if (propMeta) {
-                if (oldValue === newValue) {
-                    return;
-                }
-
-                console.log(`Attribute changed: ${attr} from ${oldValue} to ${newValue}`);
-                const { prop, mapper } = propMeta;
-                const transformedValue = mapper.fromAttribute(newValue);
-                this[prop] = transformedValue;
-            }
-
-            originalAttributeChangedCallback?.call(this, attr, oldValue, newValue);
-        }
-    }
-
-    private static setupInitializer(prototype: any, metadata: PropertyDecoratorMetadataObject) {
-        // Add initializer to set initial property values from attributes
-        const originalConnectedCallback = prototype.connectedCallback;
-        prototype.connectedCallback = function () {
-            for (const [attr, { prop, mapper }] of metadata.entries()) {
-                if (this.hasAttribute(attr)) {
-                    const attrValue = this.getAttribute(attr);
-                    this[prop] = mapper.fromAttribute(attrValue);
-                } else {
-                    const currentValue = this[prop];
-
-                    if (currentValue !== undefined && currentValue !== null) {
-                        this.setAttribute(attr, mapper.toAttribute(currentValue));
-                    }
-                }
-            }
-
-            originalConnectedCallback?.call(this);
-        }
     }
 }
 

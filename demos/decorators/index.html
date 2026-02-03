@@ -3,26 +3,232 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Decorator Stress Test</title>
+    <title>Complete Decorators Showcase</title>
     <style>
-        body { font-family: sans-serif; padding: 2rem; }
-        .data-reset { background: #ff4757; color: white; border: none; padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; }
+        body { 
+            font-family: system-ui, sans-serif; 
+            padding: 2rem; 
+            background: #f5f5f5;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 { color: #333; text-align: center; margin-bottom: 2rem; }
+
+        .counter-widget {
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .counter-widget h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1rem 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .count-display {
+            background: #ecf0f1;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            min-width: 3rem;
+            text-align: center;
+        }
+
+        .status-indicator {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: normal;
+        }
+
+        .status-indicator.active {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .status-indicator.inactive {
+            background: #95a5a6;
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .controls button {
+            padding: 0.5rem 1rem;
+            border: 2px solid #3498db;
+            background: #3498db;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .controls button:hover {
+            background: #2980b9;
+            border-color: #2980b9;
+            transform: translateY(-1px);
+        }
+
+        .number-buttons {
+            margin: 1rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .number-btn {
+            padding: 0.25rem 0.75rem;
+            border: 1px solid #bdc3c7;
+            background: #ecf0f1;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .number-btn:hover {
+            background: #d5dbdb;
+            border-color: #95a5a6;
+        }
+
+        .search-section, .window-info, .help {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+
+        .search-section h4, .window-info h4, .help h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .search-results {
+            margin-top: 0.5rem;
+            padding: 0.5rem;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            min-height: 2rem;
+        }
+
+        .size-display {
+            font-family: monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #6c757d;
+        }
+
+        .help ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+
+        .help li {
+            margin: 0.25rem 0;
+        }
+
+        .global-controls {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin: 2rem 1rem;
+        }
+
+        .global-controls h3 {
+            margin-top: 0;
+            color: #856404;
+        }
+
+        .global-btn {
+            background: #fd79a8;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0.25rem;
+            transition: all 0.2s;
+        }
+
+        .global-btn:hover {
+            background: #e84393;
+            transform: translateY(-1px);
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1rem;
+        }
+
+        .feature-highlight {
+            background: #e8f4fd;
+            border-left: 4px solid #3498db;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
     </style>
     <script type="module" src="./main.ts"></script>
 </head>
 <body>
-    <h1>Advanced Decorator Demo</h1>
-
-    <smart-counter count="5"></smart-counter>
-
-    <smart-counter></smart-counter>
-
-    <hr>
+    <h1>🎯 Complete Decorators Showcase</h1>
     
-    <div class="external-controls">
-        <h3>External Controls</h3>
-        <p>This button is outside the component but controlled by it via Window Delegation:</p>
-        <button class="data-reset">Global Reset to 10</button>
+    <div class="feature-highlight">
+        <strong>This demo showcases:</strong> @reflect, @watcher, @event, @query, @queryAll, @debounce, and @composeElement working together
+    </div>
+
+    <div class="demo-grid">
+        <smart-counter count="5" label="Demo Counter #1"></smart-counter>
+        <smart-counter count="15" active label="Demo Counter #2"></smart-counter>
+        <smart-counter count="0" label="Demo Counter #3"></smart-counter>
+    </div>
+
+    <div class="global-controls">
+        <h3>🌍 Global Event Delegation</h3>
+        <p>These buttons are outside the components but can control them via global event delegation:</p>
+        <button class="global-btn" data-global-reset="0">Reset All to 0</button>
+        <button class="global-btn" data-global-reset="10">Reset All to 10</button>
+        <button class="global-btn" data-global-reset="20">Reset All to 20</button>
+    </div>
+
+    <div class="feature-highlight">
+        <h3>🎮 Try these interactions:</h3>
+        <ul>
+            <li><strong>Property Reflection:</strong> Change attributes in DevTools and see properties update</li>
+            <li><strong>Query Caching:</strong> DOM queries are cached with WeakRef for performance</li>
+            <li><strong>Debounced Search:</strong> Type in search inputs - only triggers after 300ms pause</li>
+            <li><strong>Window Resize:</strong> Resize browser window - updates are debounced by 150ms</li>
+            <li><strong>Event Delegation:</strong> All buttons use efficient event delegation</li>
+            <li><strong>Keyboard Shortcuts:</strong> Arrow keys, Space, and Escape work globally</li>
+            <li><strong>Property Watchers:</strong> Count limits are enforced and UI updates automatically</li>
+        </ul>
     </div>
 
 </body>
