@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decorator Stress Test</title>
+    <style>
+        body { font-family: sans-serif; padding: 2rem; }
+        .data-reset { background: #ff4757; color: white; border: none; padding: 0.5rem 1rem; cursor: pointer; border-radius: 4px; }
+    </style>
+    <script type="module" src="./main.ts"></script>
+</head>
+<body>
+    <h1>Advanced Decorator Demo</h1>
+
+    <smart-counter count="5"></smart-counter>
+
+    <smart-counter></smart-counter>
+
+    <hr>
+    
+    <div class="external-controls">
+        <h3>External Controls</h3>
+        <p>This button is outside the component but controlled by it via Window Delegation:</p>
+        <button class="data-reset">Global Reset to 10</button>
+    </div>
+
+</body>
+</html>
