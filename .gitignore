@@ -30,3 +30,5 @@ pnpm-debug.log*
 
 # Demo build artifacts
 demos/**/dist/
+
+archive/

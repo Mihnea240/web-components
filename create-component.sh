@@ -18,22 +18,22 @@ cat >"$PACKAGE_DIR/package.json" <<EOF
   "version": "1.0.0",
   "type": "module",
   "exports": {
-    ".": "./index.js",
+    ".": "./index.ts",
     "./*": "./*"
   }
 }
 EOF
 
-touch "$PACKAGE_DIR/index.js"
+touch "$PACKAGE_DIR/index.ts"
 touch "$DEMO_DIR/index.html"
-touch "$DEMO_DIR/main.js"
+touch "$DEMO_DIR/main.ts"
 
 # Add the Vite Library Config
 cat >"$PACKAGE_DIR/vite.config.js" <<EOF
 import { defineConfig } from 'vite';
 export default defineConfig({
   build: {
-    lib: { entry: './index.js', fileName: '$NAME', formats: ['es'] },
+    lib: { entry: './index.ts', fileName: '$NAME', formats: ['es'] },
     rollupOptions: { external: [/^lit-html/, /^@mihnea240\/ui-core/] }
   }
 });

@@ -9,7 +9,7 @@ type QueryMetadataObject = {
     cache: WeakMap<HTMLElement, Map<string | symbol, WeakRef<any>>>
 };
 
-type QueryDecoratorOptions = {
+export type QueryDecoratorOptions = {
     shadow?: boolean;
     cache?: boolean;
     required?: boolean;

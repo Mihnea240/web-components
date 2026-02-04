@@ -72,7 +72,6 @@ class PropertyRegistry {
                 return;
             }
 
-            console.log(`Attribute changed: ${attr} from ${oldValue} to ${newValue}`);
             const { prop, mapper } = propMeta;
             const transformedValue = mapper.fromAttribute(newValue);
             this[prop] = transformedValue;
@@ -123,7 +122,6 @@ class PropertyRegistry {
                         }
                     }
 
-                    console.log(`Property set: ${String(prop)} = ${value}`);
                     originalSet?.call(this, value);
 
                     value = mapper.toAttribute(value);

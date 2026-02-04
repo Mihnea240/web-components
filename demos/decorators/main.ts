@@ -1,8 +1,8 @@
-import { reflect, watcher, Mappers } from "@core/decorators/reflect";
-import { composeElement } from "@core/decorators/compose";
-import { event } from "@core/decorators/event";
-import { debounce } from "@core/decorators/debounce";
-import { query, queryAll } from "@core/decorators/query";
+import { reflect, watcher, Mappers } from "@decorators/reflect";
+import { composeElement } from "@decorators/compose";
+import { event } from "@decorators/event";
+import { debounce, throttle } from "@decorators/debounce";
+import { query, queryAll } from "@decorators/query";
 
 @composeElement("smart-counter")
 class SmartCounter extends HTMLElement { 
@@ -113,14 +113,26 @@ class SmartCounter extends HTMLElement {
         }
     }
 
-    // 6. Debounced resize handler
+    // 6. Throttled resize handler (fires during continuous resizing)
     @event("resize", { target: () => window })
-    @debounce(150)
+    @throttle(150)
     handleResize() {
-        console.log('Window resized (debounced):', window.innerWidth, 'x', window.innerHeight);
+        console.log('Window resized (throttled):', window.innerWidth, 'x', window.innerHeight);
         const sizeDisplay = this.querySelector('.size-display');
         if (sizeDisplay) {
             sizeDisplay.textContent = `${window.innerWidth}x${window.innerHeight}`;
+        }
+    }
+
+    // 6b. Throttled scroll handler for performance
+    @event("scroll", { target: () => window })
+    @throttle(100)
+    handleScroll() {
+        const scrollY = window.scrollY;
+        console.log('Window scrolled (throttled):', scrollY);
+        const scrollDisplay = this.querySelector('.scroll-display');
+        if (scrollDisplay) {
+            scrollDisplay.textContent = `Scroll: ${scrollY}px`;
         }
     }
 
@@ -188,8 +200,9 @@ class SmartCounter extends HTMLElement {
                 </div>
 
                 <div class="window-info">
-                    <h4>Window Size (debounced resize)</h4>
+                    <h4>Window Size (throttled resize)</h4>
                     <div class="size-display">${window.innerWidth}x${window.innerHeight}</div>
+                    <div class="scroll-display">Scroll: 0px</div>
                 </div>
 
                 <div class="help">

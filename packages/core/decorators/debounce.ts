@@ -1,18 +1,39 @@
 
 
-export function debounce(delay: number = 0) { 
-    const TIMER_KEY = Symbol("debounce-timer");
+import { getComposedDataSpace } from "./compose";
 
+export function debounce(delay: number = 250) { 
     return function (value: any, context: ClassMethodDecoratorContext) {
-        return function (...args: any[]) { 
-            if (this[TIMER_KEY] !== undefined) {
-                clearTimeout(this[TIMER_KEY]);
+        const timerKey = `debounce-timer-${String(context.name)}`;
+        
+        return function (...args: any[]) {
+            const dataSpace = getComposedDataSpace(this.constructor[Symbol.metadata]);
+            
+            if (dataSpace[timerKey] !== undefined) {
+                clearTimeout(dataSpace[timerKey]);
             }
 
-            this[TIMER_KEY] = window.setTimeout(() => {
+            dataSpace[timerKey] = window.setTimeout(() => {
                 value.apply(this, args);
-                this[TIMER_KEY] = undefined;
+                dataSpace[timerKey] = undefined;
             }, delay);
+        }
+    } 
+}
+
+export function throttle(delay: number = 250) {
+    return function (value: any, context: ClassMethodDecoratorContext) {
+        const lastCallKey = `throttle-lastcall-${String(context.name)}`;
+        
+        return function (...args: any[]) {
+            const dataSpace = getComposedDataSpace(this.constructor[Symbol.metadata]);
+            const now = Date.now();
+            const lastCall = dataSpace[lastCallKey] || 0;
+            
+            if (now - lastCall >= delay) {
+                dataSpace[lastCallKey] = now;
+                value.apply(this, args);
+            }
         }
     } 
 }

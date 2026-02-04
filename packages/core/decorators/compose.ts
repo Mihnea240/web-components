@@ -50,8 +50,6 @@ export function composeElement(tagName: string) {
 		}
 		const dataSpace = getComposedDataSpace(metadata);
 
-		console.log(Symbol.metadata, metadata, constructor[Symbol.metadata]);
-		
 		// Run all setup operations (constructor/prototype modifications)
 		for (const operation of dataSpace.setupOperations) {
 			operation(constructor, constructor.prototype);
@@ -60,7 +58,12 @@ export function composeElement(tagName: string) {
 		// Create efficient single wrappers for lifecycle methods
 		setupLifecycleWrappers(constructor.prototype, dataSpace.lifecycleCallbacks);
 
-		customElements.define(tagName, constructor);
+		Promise.resolve().then(() => {
+			if (!customElements.get(tagName)) {
+				customElements.define(tagName, constructor);
+			}
+		})
+
 		return constructor;
 	}
 

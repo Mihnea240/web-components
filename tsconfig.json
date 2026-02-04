@@ -20,6 +20,15 @@
 			"@core/*": [
 				"./packages/core/*"
 			],
+			"@decorators": [
+				"./packages/core/decorators/index"
+			],
+			"@decorators/*": [
+				"./packages/core/decorators/*"
+			],
+			"@components/*": [
+				"./packages/*"
+			],
 		}
 	}
 }

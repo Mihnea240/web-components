@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>TabView Demo - Multiple Control Types</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .demo-card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            overflow: hidden;
+        }
+
+        .demo-title {
+            background: #f8f9fa;
+            padding: 12px 16px;
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 1px solid #ddd;
+        }
+
+        /* Button tabs */
+        .button-header {
+            display: flex;
+            background: #f5f5f5;
+        }
+
+        .button-header button {
+            background: none;
+            border: none;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            flex: 1;
+        }
+
+        .button-header button:hover {
+            background: #e9e9e9;
+        }
+
+        .button-header button[active] {
+            color: #007acc;
+            border-bottom-color: #007acc;
+            background: white;
+        }
+
+        .button-header button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: none !important;
+        }
+
+        /* Radio button tabs */
+        .radio-header {
+            display: flex;
+            background: #f5f5f5;
+            padding: 8px;
+            gap: 12px;
+        }
+
+        .radio-header label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .radio-header label:hover {
+            background: #e9e9e9;
+        }
+
+        .radio-header input[type="radio"] {
+            margin: 0;
+        }
+
+        /* Select dropdown tabs */
+        .select-header {
+            padding: 12px;
+            background: #f5f5f5;
+        }
+
+        .select-header select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        /* Text input tabs */
+        .text-header {
+            padding: 12px;
+            background: #f5f5f5;
+        }
+
+        .text-header input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        /* Datalist input tabs */
+        .datalist-header {
+            padding: 12px;
+            background: #f5f5f5;
+        }
+
+        .datalist-header input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        [slot="tab"] {
+            padding: 20px;
+            min-height: 120px;
+            font-size: 13px;
+        }
+
+        [slot="tab"] h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
+
+        [slot="tab"] p {
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        /* Event prevention demo styling */
+        .event-header {
+            display: flex;
+            background: #f5f5f5;
+            padding: 8px;
+            gap: 8px;
+        }
+
+        .event-header button {
+            background: none;
+            border: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            color: white;
+            border-radius: 3px;
+            flex: 1;
+        }
+
+        .event-header button[for="public"] {
+            background: #007acc;
+        }
+
+        .event-header button[for="restricted"] {
+            background: #ff6b6b;
+        }
+
+        .event-header button[for="open"] {
+            background: #28a745;
+        }
+
+        .event-header button:hover {
+            opacity: 0.8;
+        }
+
+        .event-header button[active] {
+            box-shadow: inset 0 0 0 2px rgba(255,255,255,0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>TabView Component - Multiple Control Types</h1>
+
+    <div class="grid">
+        <!-- Button Navigation -->
+        <div class="demo-card">
+            <h3 class="demo-title">Button Navigation</h3>
+            <tab-view active-tab="home">
+                <div slot="header" class="button-header">
+                    <button for="home">🏠 Home</button>
+                    <button for="about">ℹ️ About</button>
+                    <button for="contact">📧 Contact</button>
+                </div>
+
+                <div slot="tab" name="home">
+                    <h3>Welcome Home</h3>
+                    <p>Traditional button-based tab navigation with hover effects.</p>
+                </div>
+
+                <div slot="tab" name="about">
+                    <h3>About Us</h3>
+                    <p>Learn more about our company.</p>
+                </div>
+
+                <div slot="tab" name="contact">
+                    <h3>Get in Touch</h3>
+                    <p>Contact information and support.</p>
+                </div>
+            </tab-view>
+        </div>
+
+        <!-- Radio Button Navigation -->
+        <div class="demo-card">
+            <h3 class="demo-title">Radio Button Navigation</h3>
+            <tab-view active-tab="inbox">
+                <div slot="header" class="radio-header">
+                    <label>
+                        <input type="radio" name="mail" for="inbox" checked>
+                        📥 Inbox
+                    </label>
+                    <label>
+                        <input type="radio" name="mail" for="sent">
+                        📤 Sent
+                    </label>
+                    <label>
+                        <input type="radio" name="mail" for="drafts">
+                        📝 Drafts
+                    </label>
+                </div>
+
+                <div slot="tab" name="inbox">
+                    <h3>📥 Inbox</h3>
+                    <p>12 new messages waiting.</p>
+                </div>
+
+                <div slot="tab" name="sent">
+                    <h3>📤 Sent Items</h3>
+                    <p>Your sent message history.</p>
+                </div>
+
+                <div slot="tab" name="drafts">
+                    <h3>📝 Draft Messages</h3>
+                    <p>3 messages saved as drafts.</p>
+                </div>
+            </tab-view>
+        </div>
+
+        <!-- Select Dropdown Navigation -->
+        <div class="demo-card">
+            <h3 class="demo-title">Select Dropdown Navigation</h3>
+            <tab-view active-tab="overview">
+                <select slot="header" class="select-header">
+                    <option value="overview">📊 Overview</option>
+                    <option value="analytics">📈 Analytics</option>
+                    <option value="reports">📋 Reports</option>
+                    <option value="settings">⚙️ Settings</option>
+                </select>
+
+                <div slot="tab" name="overview">
+                    <h3>📊 Overview</h3>
+                    <p>High-level dashboard metrics.</p>
+                </div>
+
+                <div slot="tab" name="analytics">
+                    <h3>📈 Analytics</h3>
+                    <p>Performance analytics and trends.</p>
+                </div>
+
+                <div slot="tab" name="reports">
+                    <h3>📋 Reports</h3>
+                    <p>Generate custom reports.</p>
+                </div>
+
+                <div slot="tab" name="settings">
+                    <h3>⚙️ Settings</h3>
+                    <p>Configure preferences.</p>
+                </div>
+            </tab-view>
+        </div>
+
+        <!-- Text Input Search -->
+        <div class="demo-card">
+            <h3 class="demo-title">Text Input Search</h3>
+            <tab-view active-tab="users">
+                <div slot="header" class="text-header">
+                    <input type="text" for="" placeholder="Type: users, products, orders..." value="users">
+                </div>
+
+                <div slot="tab" name="users">
+                    <h3>👥 User Management</h3>
+                    <p>Type tab names for quick navigation.</p>
+                </div>
+
+                <div slot="tab" name="products">
+                    <h3>📦 Product Catalog</h3>
+                    <p>Browse your inventory.</p>
+                </div>
+
+                <div slot="tab" name="orders">
+                    <h3>🛒 Order History</h3>
+                    <p>Track customer orders.</p>
+                </div>
+            </tab-view>
+        </div>
+
+        <!-- Datalist Autocomplete -->
+        <div class="demo-card">
+            <h3 class="demo-title">Datalist Autocomplete</h3>
+            <tab-view active-tab="dashboard">
+                <div slot="header" class="datalist-header">
+                    <input type="text" list="pages" placeholder="Search pages..." value="dashboard">
+                    <datalist id="pages">
+                        <option value="dashboard" for="dashboard">🏠 Dashboard</option>
+                        <option value="profile" for="profile">👤 Profile</option>
+                        <option value="notifications" for="notifications">🔔 Notifications</option>
+                        <option value="help" for="help">❓ Help</option>
+                    </datalist>
+                </div>
+
+                <div slot="tab" name="dashboard">
+                    <h3>🏠 Dashboard</h3>
+                    <p>Main dashboard with autocomplete.</p>
+                </div>
+
+                <div slot="tab" name="profile">
+                    <h3>👤 Profile</h3>
+                    <p>User profile and settings.</p>
+                </div>
+
+                <div slot="tab" name="notifications">
+                    <h3>🔔 Notifications</h3>
+                    <p>Recent alerts and messages.</p>
+                </div>
+
+                <div slot="tab" name="help">
+                    <h3>❓ Help & Support</h3>
+                    <p>Documentation and support.</p>
+                </div>
+            </tab-view>
+        </div>
+
+        <!-- Event Prevention Demo -->
+        <div class="demo-card">
+            <h3 class="demo-title">Event Prevention Demo</h3>
+            <tab-view id="restricted-demo" active-tab="public">
+                <div slot="header" class="event-header">
+                    <button for="public">Public</button>
+                    <button for="restricted">🔒 Restricted</button>
+                    <button for="open">Open</button>
+                </div>
+
+                <div slot="tab" name="public">
+                    <h3>Public Content</h3>
+                    <p>This tab is always accessible. Try clicking the Restricted tab!</p>
+                </div>
+
+                <div slot="tab" name="restricted">
+                    <h3>🔒 Restricted Content</h3>
+                    <p>You gained access via preventDefault override!</p>
+                </div>
+
+                <div slot="tab" name="open">
+                    <h3>Open Access</h3>
+                    <p>Another publicly accessible tab.</p>
+                </div>
+            </tab-view>
+        </div>
+    </div>
+
+    <script type="module" src="main.ts"></script>
+    <script>
+        // Demo event prevention on tab-change
+        document.getElementById('restricted-demo').addEventListener('tab-change', (e) => {
+            if (e.detail.newTab === 'restricted') {
+                const allow = confirm('🔒 This tab is restricted. Allow access?');
+                if (!allow) {
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
