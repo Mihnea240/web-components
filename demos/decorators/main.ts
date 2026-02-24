@@ -1,7 +1,7 @@
 import { reflect, watcher, Mappers } from "@decorators/reflect";
 import { composeElement } from "@decorators/compose";
 import { event } from "@decorators/event";
-import { debounce, throttle } from "@decorators/debounce";
+import { debounce, throttle } from "@decorators/batch";
 import { query, queryAll } from "@decorators/query";
 
 @composeElement("smart-counter")

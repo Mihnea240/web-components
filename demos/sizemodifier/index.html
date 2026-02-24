@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Size Modifier Demo</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 16px;
+            font-family: sans-serif;
+            font-size: 13px;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            background: #f0f0f0;
+        }
+
+        h2 { margin: 0; font-size: 12px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: .05em; }
+
+        .row    { display: flex; flex-direction: row; }
+        .column { display: flex; flex-direction: column; }
+
+        /* Two demos side by side */
+        .demos { display: flex; gap: 16px; flex: 1; min-height: 0; }
+        .demo  { display: flex; flex-direction: column; gap: 6px; flex: 1; min-height: 0; }
+
+        .container {
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background: #fff;
+        }
+
+        .pane {
+            flex: 1;
+            min-width: 40px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+        }
+
+        .pane:nth-child(4n+1) { background: #e8f0fe; }
+        .pane:nth-child(4n+2) { background: #fce8e6; }
+        .pane:nth-child(4n+3) { background: #e6f4ea; }
+        .pane:nth-child(4n+0) { background: #fef7e0; }
+
+        /* trailing-divider demo panes have explicit widths */
+        .trailing .pane { flex: none; width: 120px; min-width: 40px; }
+
+        /* flex demo — panes start with an explicit size to avoid the initial-jump issue */
+        .flex-demo .pane { flex: none; width: 150px; min-width: 50px; }
+
+        size-modifier { background: #ddd; }
+        size-modifier:hover, size-modifier[active] { background: #0078d7; }
+    </style>
+</head>
+<body>
+
+    <div class="demos">
+
+        <div class="demo">
+            <h2>Horizontal — cascade</h2>
+            <div class="container row">
+                <div class="pane">A</div>
+                <size-modifier></size-modifier>
+                <div class="pane">B</div>
+                <size-modifier></size-modifier>
+                <div class="pane">C</div>
+                <size-modifier></size-modifier>
+                <div class="pane">D</div>
+                <size-modifier></size-modifier>
+                <div class="pane">E</div>
+            </div>
+        </div>
+
+        <div class="demo">
+            <h2>Vertical — cascade</h2>
+            <div class="container column">
+                <div class="pane">Top</div>
+                <size-modifier></size-modifier>
+                <div class="pane">Middle</div>
+                <size-modifier></size-modifier>
+                <div class="pane">Bottom</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="demos">
+
+        <div class="demo">
+            <h2>Horizontal — neighbor only</h2>
+            <div class="container row">
+                <div class="pane">A</div>
+                <size-modifier cascade="false"></size-modifier>
+                <div class="pane">B</div>
+                <size-modifier cascade="false"></size-modifier>
+                <div class="pane">C</div>
+                <size-modifier cascade="false"></size-modifier>
+                <div class="pane">D</div>
+                <size-modifier cascade="false"></size-modifier>
+                <div class="pane">E</div>
+            </div>
+        </div>
+
+        <div class="demo">
+            <h2>Trailing divider (free space)</h2>
+            <div class="container row trailing">
+                <div class="pane">X</div>
+                <size-modifier></size-modifier>
+                <div class="pane">Y</div>
+                <size-modifier></size-modifier>
+                <div class="pane">Z</div>
+                <size-modifier></size-modifier>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="demos">
+
+        <div class="demo">
+            <h2>Flex — explicit initial sizes (stable)</h2>
+            <div class="container row flex-demo">
+                <div class="pane">A</div>
+                <size-modifier></size-modifier>
+                <div class="pane">B</div>
+                <size-modifier></size-modifier>
+                <div class="pane">C</div>
+                <size-modifier></size-modifier>
+                <div class="pane">D</div>
+            </div>
+        </div>
+
+        <div class="demo">
+            <h2>Flex — flex:1 panes (may jump on first drag)</h2>
+            <div class="container row">
+                <div class="pane">A</div>
+                <size-modifier></size-modifier>
+                <div class="pane">B</div>
+                <size-modifier></size-modifier>
+                <div class="pane">C</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>

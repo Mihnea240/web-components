@@ -88,7 +88,12 @@ class PropertyRegistry {
                 const currentValue = this[prop];
 
                 if (currentValue !== undefined && currentValue !== null) {
-                    this.setAttribute(attr, mapper.toAttribute(currentValue));
+                    const attrVal = mapper.toAttribute(currentValue);
+                    if (attrVal !== null) {
+                        this.setAttribute(attr, attrVal);
+                    } else {
+                        this.removeAttribute(attr);
+                    }
                 }
             }
         }
@@ -163,7 +168,7 @@ export const Mappers = {
     } as Mapper<number>,
     Boolean: {
         toAttribute: (value: boolean) => value ? '' : null,
-        fromAttribute: (value: string | null) => value !== null
+        fromAttribute: (value: string | null) => value !== null && value !== 'false'
     } as Mapper<boolean>,
     String: {
         toAttribute: (value: string) => value ?? null,
