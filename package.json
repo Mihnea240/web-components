@@ -11,7 +11,7 @@
 		"dev": "vite",
 		"build": "npm run build --workspaces",
 		"clean": "rm -rf packages/*/dist",
-		"demo": "vite demos/$npm_config_name --open",
+		"demo": "vite demos/$npm_config_name --config vite.config.js --open",
 		"test": "echo \"Error: no test specified\" && exit 1"
 	},
 	"repository": {

@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<link rel="icon" type="image/svg+xml" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Infinite canvas demo</title>
+
+	<style>
+		body {
+			margin: 0;
+			padding: 0;
+			overflow: hidden;
+			background-color: #f0f0f0;
+		}
+
+		infinite-canvas {
+			display: block;
+			width: 100vw;
+			height: 100vh;
+		}
+
+		.box{
+			position: absolute;
+			background-color: rgb(51, 51, 51);
+			border: 1px solid #ccc;
+			width: 100px;
+			height: 100px;
+			box-sizing: border-box;
+			align-content: center;
+			text-align: center;
+		}
+	</style>
+  <script type="module" src="main.ts"></script>
+</head>
+
+<body>
+	<p>Drag the screen with the mouse and scroll to zoom</p>
+	<infinite-canvas></infinite-canvas>
+</body>
+
+</html>

@@ -27,7 +27,7 @@
 				"./packages/core/decorators/*"
 			],
 			"@components/*": [
-				"./packages/*"
+				"./packages/*/index.ts"
 			],
 		}
 	}
