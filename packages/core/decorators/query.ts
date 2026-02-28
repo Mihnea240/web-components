@@ -9,9 +9,12 @@ type QueryMetadataObject = {
     cache: WeakMap<HTMLElement, Map<string | symbol, WeakRef<any>>>
 };
 
-export type QueryDecoratorOptions = {
+export interface QueryDecoratorOptions {
+    /** Search in shadow DOM. @default true */
     shadow?: boolean;
+    /** Cache query results. @default true */
     cache?: boolean;
+    /** Throw error if element not found. @default false */
     required?: boolean;
 }
 

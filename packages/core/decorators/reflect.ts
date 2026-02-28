@@ -157,7 +157,9 @@ class PropertyRegistry {
 }
 
 interface Mapper<T> {
+    /** Converts a property value to an HTML attribute string (or null to remove). */
     toAttribute: (value: T) => string | null,
+    /** Converts an HTML attribute string back to a property value. */
     fromAttribute: (value: string | null) => T
 }
 

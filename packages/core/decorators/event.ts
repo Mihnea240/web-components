@@ -8,8 +8,11 @@ type EventHandlersMap = Map<string, {
 }[]>;
 
 type EventDecoratorOptions = {
+    /** Function that returns the element to attach the listener to. @default identity (element itself) */
     target?: Function;
+    /** CSS selector for event delegation. Only triggers handler if target matches. */
     selector?: string;
+    /** Listener options (capture, passive, once). Passed to addEventListener. */
     options?: AddEventListenerOptions;
 }
 
@@ -121,6 +124,7 @@ export function event(eventName: string, options?: EventDecoratorOptions) {
 
 /**
  * Removes an event handler method from the registry, previously registered with the @event decorator.
+ * This is class-level and will affect all instances.
  * @returns true if a handler was found and removed, false otherwise.
  */
 export function detach(constructor: Function, methodName: string | symbol) {
@@ -140,4 +144,13 @@ export function detach(constructor: Function, methodName: string | symbol) {
     }
 
     return true;
+}
+
+/**
+ * Clears all event handlers registered on the class with the @event decorator.
+ * This is class-level and will affect all instances.
+ */
+export function detachAll(constructor: Function) {
+    const eventMetadata = EventRegistry.getMetadata(constructor[Symbol.metadata]);
+    eventMetadata.clear();
 }

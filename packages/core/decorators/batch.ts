@@ -1,6 +1,7 @@
 /**
  * @debounce
  * Delays method execution until after a specified delay has passed since the last call.
+ * @param delay Milliseconds to wait since the last call before executing. @default 250
  */
 export function debounce(delay: number = 250) {
     return function (value: Function, context: ClassMethodDecoratorContext) {
@@ -31,6 +32,7 @@ export function debounce(delay: number = 250) {
 /**
  * @throttle
  * Ensures a method is called at most once per delay.
+ * @param delay Milliseconds between allowed calls. @default 250
  */
 export function throttle(delay: number = 250) {
     return function (value: Function, context: ClassMethodDecoratorContext) {
