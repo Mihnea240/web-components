@@ -107,9 +107,37 @@ class EventRegistry {
 
 }
 
+/**
+ * Decorator for declaratively attaching event listeners to elements.
+ * Supports delegation via the `selector` option and custom event targets via the `target` option.
+ * It uses handleEvent for calling so cleanup is simpler.
+ */
 export function event(eventName: string, options?: EventDecoratorOptions) {
     return function (value: Function, context: ClassMethodDecoratorContext) {
         const registry = new EventRegistry(eventName, options);
         return registry.eventDecorator(value, context);
     }
+}
+
+/**
+ * Removes an event handler method from the registry, previously registered with the @event decorator.
+ * @returns true if a handler was found and removed, false otherwise.
+ */
+export function detach(constructor: Function, methodName: string | symbol) {
+    const eventMetadata = EventRegistry.getMetadata(constructor[Symbol.metadata]);
+    const [eventType, handlers] = eventMetadata.entries()
+        .find(([_, handlers]) => handlers.some(h => h.methodName === methodName)) || [];
+    
+    if (!eventType) {
+        return false;
+    }
+
+    const handlerIndex = handlers.findIndex(h => h.methodName === methodName);
+    handlers.splice(handlerIndex, 1);
+
+    if (handlers.length === 0) {
+        eventMetadata.delete(eventType);
+    }
+
+    return true;
 }
