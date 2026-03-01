@@ -7,16 +7,16 @@ export type LifecycleCallback = (this: HTMLElement, ...args: any[]) => void;
 
 export function getComposedDataSpace(metadata: DecoratorMetadata): {
     lifecycleCallbacks: Record<string, Set<LifecycleCallback>>,
-    setupOperations: Array<(constructor: Function, prototype: any) => void>
+    setupOperations: Set<(constructor: Function, prototype: any) => void>
 } {
     let meta = metadata[SETUP_SYMBOL] as {
         lifecycleCallbacks: Record<string, Set<LifecycleCallback>>,
-        setupOperations: Array<(constructor: Function, prototype: any) => void>
+        setupOperations: Set<(constructor: Function, prototype: any) => void>
     };
     if (!meta) {
         meta = { 
             lifecycleCallbacks: {},
-            setupOperations: []
+            setupOperations: new Set()
         };
         metadata[SETUP_SYMBOL] = meta;
     }
@@ -31,7 +31,7 @@ export function addLifecycleCallback(metadata: DecoratorMetadata, methodName: st
 
 export function addSetupOperation(metadata: DecoratorMetadata, operation: (constructor: Function, prototype: any) => void) {
     const dataSpace = getComposedDataSpace(metadata);
-    dataSpace.setupOperations.push(operation);
+    dataSpace.setupOperations.add(operation);
 }
 
 export function composeElement(tagName: string) {
@@ -58,11 +58,12 @@ export function composeElement(tagName: string) {
 		// Create efficient single wrappers for lifecycle methods
 		setupLifecycleWrappers(constructor.prototype, dataSpace.lifecycleCallbacks);
 
-		Promise.resolve().then(() => {
+		// Schedule registration after class (including static fields) is fully initialized
+		context.addInitializer(function () {
 			if (!customElements.get(tagName)) {
 				customElements.define(tagName, constructor);
 			}
-		})
+		});
 
 		return constructor;
 	}

@@ -3,8 +3,18 @@ import { getComposedDataSpace, addLifecycleCallback, addSetupOperation } from ".
 type PropertyDecoratorMetadataObject = Map<string, {
     prop: string | symbol,
     mapper?: Mapper<any>,
-    listeners?: (string | symbol)[],
+    listenersBefore?: (string | symbol)[],
+    listenersAfter?: (string | symbol)[],
 }>;
+
+interface WatcherDecoratorOptions {
+    // If true, the watcher runs after the property is updated. If false or omitted, it runs before.
+    after?: boolean;
+}
+
+const defaultWatcherOptions: WatcherDecoratorOptions = {
+    after: false,
+};
 
 class PropertyRegistry {
     static readonly metadataKey = Symbol("reflect-metadata");
@@ -48,8 +58,9 @@ class PropertyRegistry {
     }
 
     watcherDecorator(
-        value: Function,
-        context: ClassMethodDecoratorContext
+        value: (oldValue: any, newValue: any) => any,
+        context: ClassMethodDecoratorContext,
+        options: WatcherDecoratorOptions
     ) {
         if (context.kind !== "method") {
             throw new Error("@watch can only be applied to methods");
@@ -60,8 +71,13 @@ class PropertyRegistry {
             throw new Error(`@watch must be used after @reflect on ${String(this.attr)}`);
         }
 
-        propMeta.listeners ||= [];
-        propMeta.listeners.push(context.name)
+        if (options.after) {
+            propMeta.listenersAfter ||= [];
+            propMeta.listenersAfter.push(context.name);
+        } else {
+            propMeta.listenersBefore ||= [];
+            propMeta.listenersBefore.push(context.name);
+        }
     }
 
     static attributeChangedCallback(this: HTMLElement, attr: string, oldValue: any, newValue: any) {
@@ -102,7 +118,7 @@ class PropertyRegistry {
     private static setupPropertyDescriptors(constructor: Function, prototype: any) {
         const metadata = PropertyRegistry.getMetadata(constructor[Symbol.metadata]);
         // Add property descriptors to hook into getter/setter
-        for (const [attr, { prop, listeners, mapper }] of metadata.entries()) {
+        for (const [attr, { prop, listenersBefore, listenersAfter, mapper }] of metadata.entries()) {
             const descriptor = Object.getOwnPropertyDescriptor(prototype, prop);
             const { get: originalGet, set: originalSet } = descriptor || {};
 
@@ -116,7 +132,8 @@ class PropertyRegistry {
                         return true;
                     }
 
-                    for (const listener of listeners || []) {
+                    // Run "before" watchers - can transform the value
+                    for (const listener of listenersBefore || []) {
                         const transformedValue = this[listener](originalValue, value);
 
                         if (transformedValue !== undefined) {
@@ -129,8 +146,13 @@ class PropertyRegistry {
 
                     originalSet?.call(this, value);
 
-                    value = mapper.toAttribute(value);
-                    value === null ? this.removeAttribute(attr) : this.setAttribute(attr, value);
+                    const attrValue = mapper.toAttribute(value);
+                    attrValue === null ? this.removeAttribute(attr) : this.setAttribute(attr, attrValue);
+
+                    // Run "after" watchers - pure observers, return value ignored
+                    for (const listener of listenersAfter || []) {
+                        this[listener](originalValue, value);
+                    }
 
                     return true;
                 }
@@ -212,12 +234,35 @@ export function reflect(attrName?: string, mapper?: Mapper<any>) {
 
 /**
  * Marks a method as a watcher for a specific reflected attribute.
- * @param attrName The attribute name this method should watch.
+ * 
+ * @param attrName - The name of the attribute to observe.
+ * @param options - Optional configuration for the watcher.
+ * @param options.after - When false (default), the watcher runs before the property is set and can transform the value by returning it.
+ *                        When true, the watcher runs after the property is set as a pure observer (return value ignored).
+ * 
+ * @example
+ * // Transform/validate before setting (default behavior):
+ * ```ts
+ * \@reflect("count", Mappers.Number) accessor count = 0;
+ * 
+ * \@watcher("count")
+ * validateCount(oldValue, newValue) {
+ *   // Runs before property is set - can transform
+ *   return Math.max(0, newValue); // Ensure non-negative
+ * }
+ *
+ * \@watcher("count", { after: true })
+ * onCountChange(oldValue, newValue) {
+ *   // Runs after property is set - pure observer
+ *   // this.count === newValue here
+ *   console.log(`Count changed to ${this.count}`);
+ * }
+ * ```
  */
-export function watcher(attrName: string) {
+export function watcher(attrName: string, options: WatcherDecoratorOptions = defaultWatcherOptions) {
     const registry = new PropertyRegistry(attrName);
 
-    return (value: any, context: ClassMethodDecoratorContext) => {
-        registry.watcherDecorator(value, context);
+    return (value: (oldValue: any, newValue: any) => any, context: ClassMethodDecoratorContext) => {
+        registry.watcherDecorator(value, context, options);
     };
 }

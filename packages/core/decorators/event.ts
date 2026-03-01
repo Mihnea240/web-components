@@ -121,36 +121,3 @@ export function event(eventName: string, options?: EventDecoratorOptions) {
         return registry.eventDecorator(value, context);
     }
 }
-
-/**
- * Removes an event handler method from the registry, previously registered with the @event decorator.
- * This is class-level and will affect all instances.
- * @returns true if a handler was found and removed, false otherwise.
- */
-export function detach(constructor: Function, methodName: string | symbol) {
-    const eventMetadata = EventRegistry.getMetadata(constructor[Symbol.metadata]);
-    const [eventType, handlers] = eventMetadata.entries()
-        .find(([_, handlers]) => handlers.some(h => h.methodName === methodName)) || [];
-    
-    if (!eventType) {
-        return false;
-    }
-
-    const handlerIndex = handlers.findIndex(h => h.methodName === methodName);
-    handlers.splice(handlerIndex, 1);
-
-    if (handlers.length === 0) {
-        eventMetadata.delete(eventType);
-    }
-
-    return true;
-}
-
-/**
- * Clears all event handlers registered on the class with the @event decorator.
- * This is class-level and will affect all instances.
- */
-export function detachAll(constructor: Function) {
-    const eventMetadata = EventRegistry.getMetadata(constructor[Symbol.metadata]);
-    eventMetadata.clear();
-}
