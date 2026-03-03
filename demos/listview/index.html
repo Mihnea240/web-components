@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>List View Demo</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            font-family: sans-serif;
+            background: #f0f0f0;
+        }
+
+        .demo {
+            width: min(540px, 100%);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #555;
+        }
+
+        #list {
+            border: 1px solid #cfcfcf;
+            background: #fff;
+            border-radius: 6px;
+            overflow-y: auto;
+            height: 50%;
+        }
+
+        #list > div {
+            height: 44px;
+            padding: 0 12px;
+            display: flex;
+            align-items: center;
+            border-top: 1px solid #ececec;
+        }
+
+        #list > div:first-child {
+            border-top: none;
+        }
+    </style>
+</head>
+<body>
+    <section class="demo">
+        <h2>List View</h2>
+        <list-view id="list"></list-view>
+    </section>
+    <script type="module" src="./main.ts"></script>
+
+</body>
+</html>

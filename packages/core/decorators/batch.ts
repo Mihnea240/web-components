@@ -56,7 +56,7 @@ export function throttle(delay: number = 250) {
 
 /**
  * @raf
- * Batches calls to the next animation frame.
+ * Batches calls to the next animation frame.(Request Animation Frame)
  */
 export function raf() {
     return function (value: Function, context: ClassMethodDecoratorContext) {
