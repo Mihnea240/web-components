@@ -1,102 +1,68 @@
-import { getComposedDataSpace, addLifecycleCallback, addSetupOperation } from "./compose";
+import { ComposedDecoratorManager, type ComposedComponent, type ComposedComponentConstructor, type Constructor } from "./compose";
 
-type PropertyDecoratorMetadataObject = Map<string, {
+
+type PropertyDecoratorMetadata = {
     prop: string | symbol,
-    mapper?: Mapper<any>,
+    mapper: Mapper<any>,
     listenersBefore?: (string | symbol)[],
     listenersAfter?: (string | symbol)[],
-}>;
-
-interface WatcherDecoratorOptions {
-    // If true, the watcher runs after the property is updated. If false or omitted, it runs before.
-    after?: boolean;
-}
-
-const defaultWatcherOptions: WatcherDecoratorOptions = {
-    after: false,
 };
 
-class PropertyRegistry {
-    static readonly metadataKey = Symbol("reflect-metadata");
+class PropertyRegistry extends ComposedDecoratorManager {
+    static readonly symbol = Symbol("PropertyRegistry");
+    private propertyRegistry = new Map<string, PropertyDecoratorMetadata>();
 
-    constructor(public attr: string, public mapper?: Mapper<any>) {
-        this.attr = attr;
-        this.mapper = mapper || Mappers.String;
+    constructor() {
+        super();
     }
 
-    static getMetadata(metadata: DecoratorMetadataObject): PropertyDecoratorMetadataObject {
-        const dataSpace = getComposedDataSpace(metadata);
-        return dataSpace[PropertyRegistry.metadataKey] ??= new Map();
+    getPropertyEntry(attr: string) {
+        return this.propertyRegistry.get(attr);
     }
 
-    reflectorDecorator(
-        value: ClassAccessorDecoratorContext,
-        context: ClassAccessorDecoratorContext
-    ) {
-        if (context.kind !== "accessor") {
-            throw new Error("@reflect can only be applied to accessors");
+    addPropertyEntry(attr: string, prop: string | symbol, mapper = Mappers.String) {
+        if (this.propertyRegistry.has(attr)) {
+            throw new Error(`Duplicate @reflect decorator on ${attr}`);
         }
 
-        this.attr ??= String(context.name);
-
-        const metadata = PropertyRegistry.getMetadata(context.metadata);
-        if (metadata.has(this.attr)) {
-            throw new Error(`Duplicate @reflect decorator on ${String(this.attr)}`);
-        }
-
-        metadata.set(this.attr, { prop: context.name, mapper: this.mapper });
-
-        // Register static lifecycle callbacks - Sets will deduplicate automatically
-        addLifecycleCallback(context.metadata, 'attributeChangedCallback', PropertyRegistry.attributeChangedCallback);
-        addLifecycleCallback(context.metadata, 'connectedCallback', PropertyRegistry.connectedCallback);
-        
-        // Register setup operations for constructor-level modifications
-        addSetupOperation(context.metadata, PropertyRegistry.setupPropertyDescriptors);
-        addSetupOperation(context.metadata, PropertyRegistry.setupObservedAttributes);
-
-        return value;
+        this.propertyRegistry.set(attr, { prop, mapper });
     }
 
-    watcherDecorator(
-        value: (oldValue: any, newValue: any) => any,
-        context: ClassMethodDecoratorContext,
-        options: WatcherDecoratorOptions
-    ) {
-        if (context.kind !== "method") {
-            throw new Error("@watch can only be applied to methods");
-        }
-        const metadata = PropertyRegistry.getMetadata(context.metadata);
-        const propMeta = metadata.get(this.attr);
-        if (!propMeta) {
-            throw new Error(`@watch must be used after @reflect on ${String(this.attr)}`);
+    pushListener(attr: string, methodName: string | symbol, before = false) {
+        const entry = this.getPropertyEntry(attr);
+        if (!entry) {
+            throw new Error(`No property entry found for attribute ${attr} - did you forget to add @reflect?`);
         }
 
-        if (options.after) {
-            propMeta.listenersAfter ||= [];
-            propMeta.listenersAfter.push(context.name);
-        } else {
-            propMeta.listenersBefore ||= [];
-            propMeta.listenersBefore.push(context.name);
-        }
+        const listenerKey = before ? "listenersBefore" : "listenersAfter";
+        entry[listenerKey] ??= [];
+        entry[listenerKey]!.push(methodName);
     }
 
-    static attributeChangedCallback(this: HTMLElement, attr: string, oldValue: any, newValue: any) {
-        const metadata = PropertyRegistry.getMetadata(this.constructor[Symbol.metadata]);
-        const propMeta = metadata.get(attr);
+    static getMetadata(metadata: DecoratorMetadataObject) {
+        const registry = PropertyRegistry.getManager(metadata);
+        return registry.propertyRegistry;
+    }
+
+    static attributeChangedCallback(this: ComposedComponent, attr: string, oldValue: any, newValue: any) {
+        const registry = PropertyRegistry.getManager(this.constructor[Symbol.metadata]);;
+        const propMeta = registry.getPropertyEntry(attr);
+
         if (propMeta) {
             if (oldValue === newValue) {
                 return;
             }
 
-            const { prop, mapper } = propMeta;
+            const { prop, mapper = Mappers.String } = propMeta;
             const transformedValue = mapper.fromAttribute(newValue);
             this[prop] = transformedValue;
         }
     }
 
-    static connectedCallback(this: HTMLElement) {
-        const metadata = PropertyRegistry.getMetadata(this.constructor[Symbol.metadata]);
-        for (const [attr, { prop, mapper }] of metadata.entries()) {
+    static connectedCallback(this: ComposedComponent) {
+        const registry = PropertyRegistry.getManager(this.constructor[Symbol.metadata]);
+
+        for (const [attr, { prop, mapper = Mappers.String }] of registry.propertyRegistry.entries()) {
             if (this.hasAttribute(attr)) {
                 const attrValue = this.getAttribute(attr);
                 this[prop] = mapper.fromAttribute(attrValue);
@@ -115,10 +81,12 @@ class PropertyRegistry {
         }
     }
 
-    private static setupPropertyDescriptors(constructor: Function, prototype: any) {
-        const metadata = PropertyRegistry.getMetadata(constructor[Symbol.metadata]);
+    static setupPropertyDescriptors(constructor: ComposedComponentConstructor) {
+        const registry = PropertyRegistry.getManager(constructor[Symbol.metadata]);
+        const prototype = constructor.prototype;
+        
         // Add property descriptors to hook into getter/setter
-        for (const [attr, { prop, listenersBefore, listenersAfter, mapper }] of metadata.entries()) {
+        for (const [attr, { prop, listenersBefore, listenersAfter, mapper}] of registry.propertyRegistry.entries()) {
             const descriptor = Object.getOwnPropertyDescriptor(prototype, prop);
             const { get: originalGet, set: originalSet } = descriptor || {};
 
@@ -160,11 +128,12 @@ class PropertyRegistry {
         }
     }
 
-    private static setupObservedAttributes(constructor: Function, prototype: any) {
-        const metadata = PropertyRegistry.getMetadata(constructor[Symbol.metadata]);
+    static setupObservedAttributes(constructor: Constructor<ComposedComponent>) {
+        const registry = PropertyRegistry.getManager((constructor as any)[Symbol.metadata]);
+        
         // Overwrite observed attributes
         const attributeSet = new Set<string>(constructor["observedAttributes"] || []);
-        for (const attr of metadata.keys()) {
+        for (const attr of registry.propertyRegistry.keys()) {
             attributeSet.add(attr);
         }
 
@@ -215,7 +184,7 @@ export const Mappers = {
         }
         return {
             toAttribute: (value: T) => map.get(value) ?? null,
-            fromAttribute: (value: string | null) => value !== null ? inverseMap.get(value) as T : null
+            fromAttribute: (value: string | null) => value !== null && inverseMap.has(value) ? inverseMap.get(value)! : (null as unknown as T)
         };
     }
 };
@@ -226,9 +195,21 @@ export const Mappers = {
  * @param mapper Optional bi-directional converter (to/from).
  */
 export function reflect(attrName?: string, mapper?: Mapper<any>) {
-    const registry = new PropertyRegistry(attrName, mapper);
     return (value: any, context: ClassAccessorDecoratorContext) => {
-        registry.reflectorDecorator(value, context);
+        const registry = PropertyRegistry.getManager(context.metadata);
+        const attr = attrName ?? String(context.name);
+        
+        if (registry.getPropertyEntry(attr)) {
+            throw new Error(`Duplicate @reflect decorator on ${attr}`);
+        }
+
+        registry.addPropertyEntry(attr, context.name, mapper);
+
+        // Register hooks (will deduplicate)
+        registry.addHook("attributeChangedCallback", PropertyRegistry.attributeChangedCallback);
+        registry.addHook("connectedCallback", PropertyRegistry.connectedCallback);
+        registry.addHook("finalize", PropertyRegistry.setupPropertyDescriptors);
+        registry.addHook("finalize", PropertyRegistry.setupObservedAttributes);
     };
 }
 
@@ -236,9 +217,8 @@ export function reflect(attrName?: string, mapper?: Mapper<any>) {
  * Marks a method as a watcher for a specific reflected attribute.
  * 
  * @param attrName - The name of the attribute to observe.
- * @param options - Optional configuration for the watcher.
- * @param options.after - When false (default), the watcher runs before the property is set and can transform the value by returning it.
- *                        When true, the watcher runs after the property is set as a pure observer (return value ignored).
+ * @param after - When false (default), the watcher runs before the property is set and can transform the value by returning it.
+ *                When true, the watcher runs after the property is set as a pure observer (return value ignored).
  * 
  * @example
  * // Transform/validate before setting (default behavior):
@@ -259,10 +239,13 @@ export function reflect(attrName?: string, mapper?: Mapper<any>) {
  * }
  * ```
  */
-export function watcher(attrName: string, options: WatcherDecoratorOptions = defaultWatcherOptions) {
-    const registry = new PropertyRegistry(attrName);
-
+export function watcher(attrName: string, { after = false } = {}) {
     return (value: (oldValue: any, newValue: any) => any, context: ClassMethodDecoratorContext) => {
-        registry.watcherDecorator(value, context, options);
+        if (context.kind !== "method") {
+            throw new Error("@watcher can only be applied to methods");
+        }
+
+        const registry = PropertyRegistry.getManager(context.metadata);
+        registry.pushListener(attrName, context.name, !after);
     };
 }

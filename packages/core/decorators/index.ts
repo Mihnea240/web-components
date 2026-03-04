@@ -1,5 +1,5 @@
 // Barrel export for all decorators
-export { composeElement } from "./compose";
+export { compose } from "./compose";
 export { reflect, watcher, Mappers } from "./reflect";
 export { event } from "./event";
 export { debounce, throttle } from "./batch";

@@ -1,11 +1,11 @@
 import { reflect, watcher, Mappers } from "@decorators/reflect";
-import { composeElement } from "@decorators/compose";
+import { compose } from "@decorators/compose";
 import { event } from "@decorators/event";
 import { raf, debounce } from "@decorators/batch";
 import { query } from "@decorators/query";
 import { styleSheet } from "@core/util/styleSheet";
 
-@composeElement("infinite-canvas")
+@compose("infinite-canvas")
 export class InfiniteCanvas extends HTMLElement {
     // Reflected to attributes — only updated at end of interaction
     @reflect("x", Mappers.Number) accessor committedX = 0;

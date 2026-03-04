@@ -3,6 +3,7 @@
 		"target": "ES2022", // Or higher
 		"module": "ESNext",
 		"moduleResolution": "bundler",
+		"verbatimModuleSyntax": true,
 		/* Stage 3 Decorators Settings */
 		"experimentalDecorators": false, // Keep false for Stage 3
 		"emitDecoratorMetadata": false, // Stage 3 does not support this yet
@@ -12,7 +13,8 @@
 			"DOM",
 			"ESNext"
 		],
-		"strict": false,
+		"strict": true,
+		"noImplicitAny": false,
 		"paths": {
 			"@core": [
 				"./packages/core/*"

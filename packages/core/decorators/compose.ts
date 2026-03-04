@@ -1,104 +1,27 @@
-// export const SETUP_SYMBOL = Symbol("composed-setup");
-// export type SetupComposedTask = (constructor: Function, proto: any) => void;
-// export type LifecycleCallback = (this: HTMLElement, ...args: any[]) => void;
+export type Constructor<T = any> = new (...args: any[]) => T;
+export type AccessorKey = string | symbol;
+export interface ComposedComponent extends HTMLElement {
+	constructor: Constructor<HTMLElement> & {
+		[Symbol.metadata]: DecoratorMetadataObject;
+	};
+	[key: AccessorKey]: any;
+}
+export type ComposedComponentConstructor = Constructor<ComposedComponent> & {
+    [Symbol.metadata]: DecoratorMetadataObject;
+};
 
-// (Symbol as any).metadata ??= Symbol.for("metadata");
-
-// export function getComposedDataSpace(metadata: DecoratorMetadata): {
-// 	lifecycleCallbacks: Record<string, Set<LifecycleCallback>>,
-// 	setupOperations: Set<(constructor: Function, prototype: any) => void>
-// } {
-// 	let meta = metadata[SETUP_SYMBOL] as {
-// 		lifecycleCallbacks: Record<string, Set<LifecycleCallback>>,
-// 		setupOperations: Set<(constructor: Function, prototype: any) => void>
-// 	};
-// 	if (!meta) {
-// 		meta = {
-// 			lifecycleCallbacks: {},
-// 			setupOperations: new Set()
-// 		};
-// 		metadata[SETUP_SYMBOL] = meta;
-// 	}
-// 	return meta;
-// }
-
-// export function addLifecycleCallback(metadata: DecoratorMetadata, methodName: string, callback: LifecycleCallback) {
-// 	const dataSpace = getComposedDataSpace(metadata);
-// 	dataSpace.lifecycleCallbacks[methodName] ??= new Set();
-// 	dataSpace.lifecycleCallbacks[methodName].add(callback);
-// }
-
-// export function addSetupOperation(metadata: DecoratorMetadata, operation: (constructor: Function, prototype: any) => void) {
-// 	const dataSpace = getComposedDataSpace(metadata);
-// 	dataSpace.setupOperations.add(operation);
-// }
-
-// export function composeElement(tagName: string) {
-// 	return function <T extends WebComponentConstructor>(
-// 		constructor: T,
-// 		context: ClassDecoratorContext<T>
-// 	): T | void {
-
-// 		const metadata = context.metadata
-// 		if (metadata) {
-// 			Object.defineProperty(constructor, Symbol.metadata, {
-// 				value: metadata,
-// 				configurable: true,
-// 				enumerable: false,
-// 			});
-// 		}
-// 		const dataSpace = getComposedDataSpace(metadata);
-
-// 		// Run all setup operations (constructor/prototype modifications)
-// 		for (const operation of dataSpace.setupOperations) {
-// 			operation(constructor, constructor.prototype);
-// 		}
-
-// 		// Create efficient single wrappers for lifecycle methods
-// 		setupLifecycleWrappers(constructor.prototype, dataSpace.lifecycleCallbacks);
-
-// 		// Schedule registration after class (including static fields) is fully initialized
-// 		context.addInitializer(function () {
-// 			if (!customElements.get(tagName)) {
-// 				customElements.define(tagName, constructor);
-// 			}
-// 		});
-
-// 		return constructor;
-// 	}
-
-// }
-
-// function setupLifecycleWrappers(prototype: any, lifecycleCallbacks: Record<string, Set<LifecycleCallback>>) {
-// 	for (const [methodName, callbacks] of Object.entries(lifecycleCallbacks)) {
-// 		if (callbacks.size === 0) continue;
-
-// 		const originalMethod = prototype[methodName];
-
-// 		prototype[methodName] = function (...args: any[]) {
-// 			// Call all collected callbacks first
-// 			for (const callback of callbacks) {
-// 				callback.call(this, ...args);
-// 			}
-
-// 			// Then call original method if it exists
-// 			originalMethod?.call(this, ...args);
-// 		};
-// 	}
-// }
-
-export type WebComponentConstructor = new (...args: any[]) => HTMLElement;
 export type HookMap = {
-    // Statics (The Class Definition)
-    finalize: (constructor: WebComponentConstructor) => void;
-    
-    connectedCallback: () => void;
-    disconnectedCallback: () => void;
-	attributeChangedCallback: (name: string, old: string, next: string) => void;
-	handleEvent: (event: Event) => void;
-    
-    // Fallback for custom user hooks
-    [custom: string]: Function;
+	// Statics (The Class Definition)
+	finalize: (constructor: ComposedComponentConstructor) => void;
+
+	constructor: (this: ComposedComponent, ...args: any[]) => void;
+	connectedCallback: (this: ComposedComponent) => void;
+	disconnectedCallback: (this: ComposedComponent) => void;
+	attributeChangedCallback: (this: ComposedComponent, name: string, old: string, next: string) => void;
+	handleEvent: (this: ComposedComponent, event: Event) => void;
+
+	// Fallback for custom user hooks
+	[custom: string]: Function;
 };
 
 export abstract class ComposedDecoratorManager {
@@ -116,8 +39,7 @@ export abstract class ComposedDecoratorManager {
 		return dataSpace;
 	}
 
-	hooks: Record<PropertyKey , Set<Function>> = {};
-	static symbol;
+	hooks: Record<PropertyKey, Set<Function>> = {};
 
 	static getManager<T extends ComposedDecoratorManager>(
 		this: { new(): T; symbol: symbol },
@@ -129,6 +51,7 @@ export abstract class ComposedDecoratorManager {
 
 		const namespace = ComposedDecoratorManager.getNamespace(metadata);
 		let manager = namespace[this.symbol] as T | undefined;
+
 		if (!manager) {
 			manager = new this();
 			namespace[this.symbol] = manager;
@@ -142,7 +65,7 @@ export abstract class ComposedDecoratorManager {
 		this.hooks[methodName].add(callback);
 	}
 
-	getHooks(methodName: PropertyKey ): Set<Function> {
+	getHooks(methodName: PropertyKey): Set<Function> {
 		return this.hooks[methodName] ?? new Set();
 	}
 
@@ -163,7 +86,7 @@ export abstract class ComposedDecoratorManager {
 					callbacks.forEach(cb => lifecycleMap[methodName].add(cb));
 				}
 			});
-		
+
 		return lifecycleMap;
 	}
 
@@ -208,7 +131,7 @@ export abstract class ComposedDecoratorManager {
 	}
 
 
-	static compose<T extends WebComponentConstructor>(
+	static compose<T extends Constructor<HTMLElement>>(
 		value: T,
 		context: ClassDecoratorContext<T>,
 	): T {
@@ -224,10 +147,10 @@ export abstract class ComposedDecoratorManager {
 }
 
 export function compose(tagName: string) {
-	return function <T extends WebComponentConstructor>(
+	return function <T extends Constructor<HTMLElement>>(
 		constructor: T,
 		context: ClassDecoratorContext<T>
-	): T {
+	) {
 		const DecoratedClass = ComposedDecoratorManager.compose(constructor, context);
 
 		context.addInitializer(function () {
@@ -236,6 +159,6 @@ export function compose(tagName: string) {
 			}
 		});
 
-		return DecoratedClass;
+		return DecoratedClass as T & Constructor<ComposedComponent>;
 	}
 }

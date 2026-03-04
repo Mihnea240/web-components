@@ -1,11 +1,11 @@
 import { reflect, watcher } from "@decorators/reflect"
 import { query } from "@decorators/query";
-import { composeElement } from "@core/decorators/compose";
+import { compose } from "@core/decorators/compose";
 import { event } from "@core/decorators/event";
 import { raf, microBatch } from "@core/decorators/batch";
 import { styleSheet } from "@core/util/styleSheet";
 
-@composeElement("list-window")
+@compose("list-window")
 export class ListWindow extends HTMLElement {
     static styleSheet = styleSheet(/*css*/`
         :host {

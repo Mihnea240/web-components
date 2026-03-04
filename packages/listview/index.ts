@@ -1,9 +1,7 @@
-import { Mappers, reflect, watcher } from "@decorators/reflect"
-import { query } from "@decorators/query";
-import { composeElement } from "@core/decorators/compose";
-import { event } from "@core/decorators/event";
-import { raf, microBatch } from "@core/decorators/batch";
+import { raf } from "@core/decorators/batch";
+import { compose } from "@core/decorators/compose";
 import { styleSheet } from "@core/util/styleSheet";
+import { Mappers, reflect, watcher } from "@decorators/reflect";
 
 import { createObservableArray } from "@core/util/arrayProxy";
 
@@ -33,7 +31,7 @@ type ListViewInitOptions = {
     generator?: (index: number) => any,
 };
 
-@composeElement("list-view")
+@compose("list-view")
 export class ListView extends HTMLElement {
 
     @reflect("size", Mappers.Number) accessor size = 0;
@@ -71,7 +69,7 @@ export class ListView extends HTMLElement {
         super();
         this.attachShadow({ mode: "open" }).innerHTML = ListView.shadowDom;
         const internals = this.attachInternals();
-        this.shadowRoot.adoptedStyleSheets = [ListView.styleSheet];
+        this.shadowRoot!.adoptedStyleSheets = [ListView.styleSheet];
 
         internals.role = "list";
     }

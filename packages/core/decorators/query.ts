@@ -1,14 +1,12 @@
-import { getComposedDataSpace, addLifecycleCallback, addSetupOperation } from "./compose";
+import { ComposedDecoratorManager, type ComposedComponent } from "./compose";
 
-type QueryMetadataObject = {
-    queries: Map<string | symbol, {
-        selector: string,
-        queryType: 'query' | 'queryAll',
-        options: QueryDecoratorOptions
-    }>,
-    cache: WeakMap<HTMLElement, Map<string | symbol, WeakRef<any>>>
+type QueryMetadata = {
+    selector: string,
+    queryType: 'query' | 'queryAll',
+    options: Required<QueryDecoratorOptions>
 };
-
+export type AccessorKey = string | symbol;
+export type QueryResult = Element | NodeListOf<Element> | null;
 export interface QueryDecoratorOptions {
     /** Search in shadow DOM. @default true */
     shadow?: boolean;
@@ -24,127 +22,84 @@ const DEFAULT_OPTIONS: Required<QueryDecoratorOptions> = {
     required: false
 };
 
-class QueryRegistry {
-    static readonly metadataKey = Symbol("query-metadata");
-    static readonly cacheKey = Symbol("query-cache");
+function performQuery(
+    element: HTMLElement,
+    selector: string,
+    queryType: 'query' | 'queryAll',
+    options: QueryDecoratorOptions
+) {
+    const root = options.shadow ? (element.shadowRoot || element) : element;
 
-    constructor(
-        public selector: string,
-        public queryType: 'query' | 'queryAll',
-        public options?: QueryDecoratorOptions
-    ) {
-        this.options = { ...DEFAULT_OPTIONS, ...options };
+    const result = queryType === 'query'
+        ? root.querySelector(selector)
+        : root.querySelectorAll(selector);
+
+    if (options.required && !result) {
+        throw new Error(`Required query selector "${selector}" not found`);
     }
 
-    static getMetadata(metadata: DecoratorMetadataObject): QueryMetadataObject {
-        const dataSpace = getComposedDataSpace(metadata);
-        if (!dataSpace[QueryRegistry.metadataKey]) {
-            dataSpace[QueryRegistry.metadataKey] = {
-                queries: new Map(),
-                cache: new WeakMap()
-            };
-        }
-        return dataSpace[QueryRegistry.metadataKey];
+    return result;
+}
+
+class QueryRegistry extends ComposedDecoratorManager {
+    static symbol = Symbol("QueryRegistry");
+    cache: WeakMap<HTMLElement, Map<AccessorKey, WeakRef<Exclude<QueryResult, null>>>> = new WeakMap();
+
+    getSelectorMap(element: HTMLElement) {
+        const value = this.cache.get(element);
+        if (value) return value;
+
+        const newMap = new Map();
+        this.cache.set(element, newMap);
+
+        return newMap;
     }
 
-    queryDecorator(
-        value: any,
-        context: ClassAccessorDecoratorContext | ClassFieldDecoratorContext
-    ) {
-        if (context.kind !== "accessor" && context.kind !== "field") {
-            throw new Error("@query/@queryAll can only be applied to accessors or fields");
-        }
-
-        const metadata = QueryRegistry.getMetadata(context.metadata);
-
-        metadata.queries.set(context.name, {
-            selector: this.selector,
-            queryType: this.queryType,
-            options: this.options
-        });
-
-        // Register setup operations for property descriptors
-        addSetupOperation(context.metadata, QueryRegistry.setupPropertyDescriptors);
-
-        return value;
+    setCache(element: HTMLElement, prop: AccessorKey, value: QueryResult) {
+        if (!value) return;
+        const selectorMap = this.getSelectorMap(element);
+        selectorMap.set(prop, new WeakRef(value));
     }
 
-    private static performQuery(
-        element: HTMLElement,
-        selector: string,
-        queryType: 'query' | 'queryAll',
-        options: QueryDecoratorOptions
-    ): Element | NodeListOf<Element> | null {
-        const root = options.shadow ? (element.shadowRoot || element) : element;
-
-        const result = queryType === 'query'
-            ? root.querySelector(selector)
-            : root.querySelectorAll(selector);
-
-        if (options.required && !result) {
-            throw new Error(`Required query selector "${selector}" not found`);
-        }
-
-        return result;
-    }
-
-    private static setCache(element: HTMLElement, prop: string | symbol, value: any) {
-        const metadata = QueryRegistry.getMetadata(element.constructor[Symbol.metadata]);
-        let elementCache = metadata.cache.get(element);
-        if (!elementCache) {
-            elementCache = new Map();
-            metadata.cache.set(element, elementCache);
-        }
-        // Store as WeakRef to allow GC of removed DOM nodes
-        if (value && typeof value === 'object') {
-            elementCache.set(prop, new WeakRef(value));
-        }
-    }
-
-    private static getCache(element: HTMLElement, prop: string | symbol): any {
-        const metadata = QueryRegistry.getMetadata(element.constructor[Symbol.metadata]);
-        const elementCache = metadata.cache.get(element);
+    getCache(element: HTMLElement, prop: AccessorKey) {
+        const elementCache = this.cache.get(element);
         const weakRef = elementCache?.get(prop);
-        
-        return weakRef?.deref();
+        return weakRef?.deref() ?? null;
     }
 
-    private static setupPropertyDescriptors(constructor: Function, prototype: any) {
-        const metadata = QueryRegistry.getMetadata(constructor[Symbol.metadata]);
-
-        for (const [prop, { selector, queryType, options }] of metadata.queries.entries()) {
-            Object.defineProperty(prototype, prop, {
-                get() {
-                    // Check cache first if caching is enabled
-                    if (!options.cache) {
-                        return QueryRegistry.performQuery(this, selector, queryType, options);
-                    }
-
-                    let cached = QueryRegistry.getCache(this, prop);
-
-                    if (cached == undefined) {
-                        cached = QueryRegistry.performQuery(this, selector, queryType, options);
-                        QueryRegistry.setCache(this, prop, cached);
-                    }
-
-                    return cached;
-                },
-                set(value) {
-                    // Allow manual setting/clearing of cache
-                    if (options.cache) {
-                        QueryRegistry.setCache(this, prop, value);
-                    }
-                },
-                configurable: true,
-                enumerable: true
-            });
-        }
+    clearCache(element: HTMLElement) {
+        this.cache.delete(element);
     }
 
-    // Helper method to clear all query caches (can be called manually)
-    static clearAllCaches(element: HTMLElement) {
-        const metadata = QueryRegistry.getMetadata(element.constructor[Symbol.metadata]);
-        metadata.cache.delete(element);
+    createAccessor(metadata: QueryMetadata, propName: AccessorKey) {
+        const { selector, queryType, options } = metadata;
+
+        return {
+            get(this: ComposedComponent) {
+                const registry = QueryRegistry.getManager(this.constructor[Symbol.metadata]);
+
+                // Check cache first if caching is enabled
+                if (!options.cache) {
+                    return performQuery(this, selector, queryType, options);
+                }
+
+                let cached = registry.getCache(this, propName);
+
+                if (cached == null) {
+                    cached = performQuery(this, selector, queryType, options);
+                    registry.setCache(this, propName, cached);
+                }
+
+                return cached;
+            },
+            set(this: ComposedComponent, value: any) {
+                // Allow manual setting/clearing of cache
+                if (options.cache) {
+                    const registry = QueryRegistry.getManager(this.constructor[Symbol.metadata]);
+                    registry.setCache(this, propName, value);
+                }
+            }
+        };
     }
 }
 
@@ -154,9 +109,21 @@ class QueryRegistry {
  * @param options Configuration options
  */
 export function query(selector: string, options?: QueryDecoratorOptions) {
-    const registry = new QueryRegistry(selector, 'query', options);
+    const finalOptions = { ...DEFAULT_OPTIONS, ...options };
+
     return (value: any, context: ClassAccessorDecoratorContext) => {
-        registry.queryDecorator(value, context);
+        if (context.kind !== "accessor") {
+            throw new Error("@query can only be applied to accessors");
+        }
+
+        const registry = QueryRegistry.getManager(context.metadata);
+        const queryMetadata: QueryMetadata = {
+            selector,
+            queryType: 'query',
+            options: finalOptions
+        };
+
+        return registry.createAccessor(queryMetadata, context.name);
     };
 }
 
@@ -166,9 +133,21 @@ export function query(selector: string, options?: QueryDecoratorOptions) {
  * @param options Configuration options
  */
 export function queryAll(selector: string, options?: QueryDecoratorOptions) {
-    const registry = new QueryRegistry(selector, 'queryAll', options);
+    const finalOptions = { ...DEFAULT_OPTIONS, ...options };
+
     return (value: any, context: ClassAccessorDecoratorContext) => {
-        registry.queryDecorator(value, context);
+        if (context.kind !== "accessor") {
+            throw new Error("@queryAll can only be applied to accessors");
+        }
+
+        const registry = QueryRegistry.getManager(context.metadata);
+        const queryMetadata: QueryMetadata = {
+            selector,
+            queryType: 'queryAll',
+            options: finalOptions
+        };
+
+        return registry.createAccessor(queryMetadata, context.name);
     };
 }
 
@@ -176,6 +155,7 @@ export function queryAll(selector: string, options?: QueryDecoratorOptions) {
  * Clears query caches for an element (useful after DOM changes).
  * @param element The element to clear caches for
  */
-export function clearQueryCache(element: HTMLElement) {
-    QueryRegistry.clearAllCaches(element);
+export function clearQueryCache(element: ComposedComponent) {
+    const registry = QueryRegistry.getManager(element.constructor[Symbol.metadata]);
+    registry.clearCache(element);
 }

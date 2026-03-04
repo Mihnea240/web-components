@@ -1,70 +1,70 @@
-import { getComposedDataSpace, addLifecycleCallback } from "./compose";
+import type { ComposedComponent } from "./compose";
+import { ComposedDecoratorManager } from "./compose";
 
-type EventHandlersMap = Map<string, {
-    methodName: string | symbol,
-    target?: Function,
-    selector?: string,
-    options?: AddEventListenerOptions
-}[]>;
-
-type EventDecoratorOptions = {
+export type EventDecoratorOptions = {
     /** Function that returns the element to attach the listener to. @default identity (element itself) */
-    target?: Function;
+    target?: (element: HTMLElement) => HTMLElement | Window | Document;
     /** CSS selector for event delegation. Only triggers handler if target matches. */
     selector?: string;
     /** Listener options (capture, passive, once). Passed to addEventListener. */
     options?: AddEventListenerOptions;
 }
 
-function identity(el: HTMLElement) {
-    return el;
+interface EventListenerEntry {
+    methodName: string | symbol;
+    target: (element: HTMLElement) => HTMLElement | Window | Document;
+    selector?: string;
+    options: AddEventListenerOptions;
 }
 
-class EventRegistry {
-    static readonly eventDataKey = Symbol("event-metadata");
+type EventHandlersMap = Map<string, EventListenerEntry[]>;
 
-    constructor(public event: string, public options?: EventDecoratorOptions) {
-        this.options ||= {};
-        this.options.target ||= identity
-        this.options.options ||= {};
+const DEFAULT_EVENT_ENTRY: EventListenerEntry = {
+    methodName: "",
+    target: (element: HTMLElement) => element,
+    options: {}
+}
+
+class EventRegistry extends ComposedDecoratorManager {
+    static symbol = Symbol("EventRegistry");
+    private hooksRegistered = false;
+
+    constructor(public eventHandlers: EventHandlersMap = new Map()) {
+        super();
     }
 
-    static getMetadata(metadata: DecoratorMetadataObject): EventHandlersMap {
-        const dataSpace = getComposedDataSpace(metadata);
-        return dataSpace[EventRegistry.eventDataKey] ??= new Map();
+    private ensureHooksRegistered() {
+        if (!this.hooksRegistered) {
+            this.addHook("handleEvent", EventRegistry.handleEventCallback);
+            this.addHook("connectedCallback", EventRegistry.connectedCallback);
+            this.addHook("disconnectedCallback", EventRegistry.disconnectedCallback);
+            this.hooksRegistered = true;
+        }
     }
 
-    eventDecorator(
-        value: Function,
-        context: ClassMethodDecoratorContext
+    registerEventHandler(
+        eventName: string,
+        methodName: string | symbol,
+        options?: EventDecoratorOptions
     ) {
-        if (context.kind !== "method") {
-            throw new Error("@event can only be applied to methods");
+        let handlerArray = this.eventHandlers.get(eventName);
+        if (!handlerArray) {
+            this.eventHandlers.set(eventName, handlerArray = []);
         }
 
-        const metadata = EventRegistry.getMetadata(context.metadata);
-
-        if (!metadata.has(this.event)) {
-            metadata.set(this.event, []);
-        }
-
-        metadata.get(this.event).push({
-            methodName: context.name,
-            options: this.options.options,
-            selector: this.options.selector,
-            target: this.options.target
+        handlerArray.push({
+            ...DEFAULT_EVENT_ENTRY,
+            ...options,
+            methodName
         });
 
-        // Register static callbacks - Sets will automatically deduplicate
-        addLifecycleCallback(context.metadata, 'handleEvent', EventRegistry.handleEventCallback);
-        addLifecycleCallback(context.metadata, 'connectedCallback', EventRegistry.connectedCallback);
-        addLifecycleCallback(context.metadata, 'disconnectedCallback', EventRegistry.disconnectedCallback);
+        this.ensureHooksRegistered();
     }
 
-    static handleEventCallback(this: HTMLElement, event: Event) {
-        const eventMetadata = EventRegistry.getMetadata(this.constructor[Symbol.metadata]);
+    static handleEventCallback(this: ComposedComponent, event: Event) {
+        const registry = EventRegistry.getManager(this.constructor[Symbol.metadata]);
         const eventType = event.type;
-        const handlers = eventMetadata.get(eventType);
+        const handlers = registry.eventHandlers.get(eventType);
 
         for (const { methodName, selector, target } of handlers || []) {
             if (typeof this[methodName] !== "function") {
@@ -82,32 +82,31 @@ class EventRegistry {
             }
 
             const selectedTarget = (event.target as HTMLElement).closest(selector);
-            if (selectedTarget && (!actualTarget.contains || actualTarget.contains(selectedTarget))) {
+            if (selectedTarget && (!(actualTarget instanceof Node) || actualTarget.contains(selectedTarget))) {
                 this[methodName](event, selectedTarget);
             }
         }
     }
 
-    static connectedCallback(this: HTMLElement) {
-        const eventMetadata = EventRegistry.getMetadata(this.constructor[Symbol.metadata]);
-        for (const [eventType, handlers] of eventMetadata.entries()) {
-            for (const { methodName, options, target } of handlers) {
+    static connectedCallback(this: ComposedComponent) {
+        const registry = EventRegistry.getManager(this.constructor[Symbol.metadata]);
+        for (const [eventType, handlers] of registry.eventHandlers.entries()) {
+            for (const { target, options } of handlers) {
                 const actualTarget = target(this);
-                actualTarget.addEventListener(eventType, this, options);
+                actualTarget.addEventListener(eventType, this as any, options);
             }
         }
     }
 
-    static disconnectedCallback(this: HTMLElement) {
-        const eventMetadata = EventRegistry.getMetadata(this.constructor[Symbol.metadata]);
-        for (const [eventType, handlers] of eventMetadata.entries()) {
-            for (const { methodName, options, target } of handlers) {
+    static disconnectedCallback(this: ComposedComponent) {
+        const registry = EventRegistry.getManager(this.constructor[Symbol.metadata]);
+        for (const [eventType, handlers] of registry.eventHandlers.entries()) {
+            for (const { target, options } of handlers) {
                 const actualTarget = target(this);
-                actualTarget.removeEventListener(eventType, this, options);
+                actualTarget.removeEventListener(eventType, this as any, options);
             }
         }
     }
-
 }
 
 /**
@@ -117,7 +116,11 @@ class EventRegistry {
  */
 export function event(eventName: string, options?: EventDecoratorOptions) {
     return function (value: Function, context: ClassMethodDecoratorContext) {
-        const registry = new EventRegistry(eventName, options);
-        return registry.eventDecorator(value, context);
+        if (context.kind !== "method") {
+            throw new Error("@event can only be applied to methods");
+        }
+
+        const registry = EventRegistry.getManager(context.metadata);
+        registry.registerEventHandler(eventName, context.name, options);
     }
 }

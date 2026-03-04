@@ -1,8 +1,8 @@
 import { html, render } from "lit-html"
 import { styleSheet } from "@core/util/styleSheet";
-import { composeElement, query, reflect, event, queryAll, slotted, watcher } from "@decorators";
+import { compose, query, reflect, event, queryAll, slotted, watcher } from "@decorators";
 
-@composeElement("tab-view")
+@compose("tab-view")
 export class TabView extends HTMLElement {
 
     static styles = styleSheet(/*css */`

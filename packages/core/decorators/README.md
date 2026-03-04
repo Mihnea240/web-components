@@ -5,13 +5,13 @@ A powerful collection of TypeScript decorators for building modern Web Component
 ## Quick Start
 
 ```typescript
-import { composeElement } from "@decorators/compose";
+import { compose } from "@decorators/compose";
 import { reflect, watcher, Mappers } from "@decorators/reflect";
 import { event } from "@decorators/event";
 import { debounce, throttle } from "@decorators/debounce";
 import { query, queryAll } from "@decorators/query";
 
-@composeElement("my-counter")
+@compose("my-counter")
 class MyCounter extends HTMLElement {
     @reflect("count", Mappers.Number)
     accessor count = 0;
@@ -36,12 +36,12 @@ class MyCounter extends HTMLElement {
 
 ## Core Decorators
 
-### @composeElement
+### @compose
 
 Registers a custom element and enables the decorator composition system.
 
 ```typescript
-@composeElement("custom-widget")
+@compose("custom-widget")
 class CustomWidget extends HTMLElement {
     // Decorators will be automatically composed
 }
@@ -58,7 +58,7 @@ class CustomWidget extends HTMLElement {
 Synchronizes class properties with HTML attributes with automatic type conversion.
 
 ```typescript
-@composeElement("user-card")
+@compose("user-card")
 class UserCard extends HTMLElement {
     @reflect("user-id", Mappers.Number)
     accessor userId = 0;
@@ -95,7 +95,7 @@ class UserCard extends HTMLElement {
 Observes property changes and executes side effects. Watchers can transform values before they're set.
 
 ```typescript
-@composeElement("validated-input")
+@compose("validated-input")
 class ValidatedInput extends HTMLElement {
     @reflect("value", Mappers.String)
     accessor value = "";
@@ -131,7 +131,7 @@ class ValidatedInput extends HTMLElement {
 Event delegation with selector-based targeting and flexible event sources.
 
 ```typescript
-@composeElement("interactive-list")
+@compose("interactive-list")
 class InteractiveList extends HTMLElement {
     // Basic event handling
     @event("click", { selector: ".item" })
@@ -177,7 +177,7 @@ Control function execution timing for performance optimization.
 - **@throttle**: Limits execution to at most once per time period during continuous events
 
 ```typescript
-@composeElement("performance-widget")
+@compose("performance-widget")
 class PerformanceWidget extends HTMLElement {
     @query(".search-input")
     accessor searchInput!: HTMLInputElement;
@@ -215,7 +215,7 @@ class PerformanceWidget extends HTMLElement {
 Cache DOM element references with automatic memory management using WeakRef.
 
 ```typescript
-@composeElement("form-widget")
+@compose("form-widget")
 class FormWidget extends HTMLElement {
     // Single element queries
     @query(".submit-btn")
@@ -268,7 +268,7 @@ class FormWidget extends HTMLElement {
 
 ### Composition System
 ```typescript
-function composeElement(tagName: string): ClassDecorator
+function compose(tagName: string): ClassDecorator
 function getComposedDataSpace(metadata: DecoratorMetadataObject): any
 ```
 

@@ -1,5 +1,5 @@
 import { reflect, watcher, Mappers } from "@decorators/reflect";
-import { composeElement } from "@decorators/compose";
+import { compose } from "@decorators/compose";
 import { event } from "@decorators/event";
 import { styleSheet } from "@core/util/styleSheet";
 import { raf } from "@core/decorators/batch";
@@ -32,7 +32,7 @@ class ElementSizeData {
     }
 }
 
-@composeElement("size-modifier")
+@compose("size-modifier")
 export class SizeModifier extends HTMLElement {
     // --- Public API ---
     @reflect("direction", Mappers.String)
