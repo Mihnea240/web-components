@@ -1,4 +1,4 @@
-import { ComposedDecoratorManager, type ComposedComponent } from "./compose";
+import { ComposedDecoratorManager, type Composed } from "./compose";
 
 type QueryMetadata = {
     selector: string,
@@ -41,7 +41,7 @@ function performQuery(
     return result;
 }
 
-class QueryRegistry extends ComposedDecoratorManager {
+class QueryRegistry extends ComposedDecoratorManager<HTMLElement, never> {
     static symbol = Symbol("QueryRegistry");
     cache: WeakMap<HTMLElement, Map<AccessorKey, WeakRef<Exclude<QueryResult, null>>>> = new WeakMap();
 
@@ -75,7 +75,7 @@ class QueryRegistry extends ComposedDecoratorManager {
         const { selector, queryType, options } = metadata;
 
         return {
-            get(this: ComposedComponent) {
+            get(this: Composed<HTMLElement>) {
                 const registry = QueryRegistry.getManager(this.constructor[Symbol.metadata]);
 
                 // Check cache first if caching is enabled
@@ -92,7 +92,7 @@ class QueryRegistry extends ComposedDecoratorManager {
 
                 return cached;
             },
-            set(this: ComposedComponent, value: any) {
+            set(this: Composed<HTMLElement>, value: any) {
                 // Allow manual setting/clearing of cache
                 if (options.cache) {
                     const registry = QueryRegistry.getManager(this.constructor[Symbol.metadata]);
@@ -155,7 +155,7 @@ export function queryAll(selector: string, options?: QueryDecoratorOptions) {
  * Clears query caches for an element (useful after DOM changes).
  * @param element The element to clear caches for
  */
-export function clearQueryCache(element: ComposedComponent) {
+export function clearQueryCache(element: Composed<HTMLElement>) {
     const registry = QueryRegistry.getManager(element.constructor[Symbol.metadata]);
     registry.clearCache(element);
 }

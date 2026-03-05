@@ -1,7 +1,7 @@
 import { styleSheet } from "@core/util/styleSheet";
-import { ComposedDecoratorManager, type ComposedComponent, type Constructor } from "@decorators/compose";
+import { ComposedDecoratorManager, type Composed, type Constructor } from "@decorators/compose";
 
-class ShadowRegistry extends ComposedDecoratorManager {
+class ShadowRegistry extends ComposedDecoratorManager<HTMLElement, never> {
     static symbol = Symbol("ShadowRegistry");
 
     constructor(
@@ -27,7 +27,7 @@ class ShadowRegistry extends ComposedDecoratorManager {
         return sheets;
     }
 
-    static constructorInitializer(this: ComposedComponent) {
+    static constructorInitializer(this: Composed<HTMLElement>) {
         const metadata = this.constructor[Symbol.metadata];
         if (!metadata) {
             throw new Error("No metadata found for this component. Make sure to use @compose on the class.");
@@ -45,7 +45,7 @@ class ShadowRegistry extends ComposedDecoratorManager {
         }
     }
 
-    static shadowStyle<T extends ComposedComponent>(
+    static shadowStyle<T extends Composed<HTMLElement>>(
         value: ClassAccessorDecoratorResult<T, string>,
         context: ClassAccessorDecoratorContext<T>,
         cssText: string
@@ -58,7 +58,7 @@ class ShadowRegistry extends ComposedDecoratorManager {
         registry.addHook("constructor", this.constructorInitializer);
     }
 
-    static shadowRoot<T extends ComposedComponent>(
+    static shadowRoot<T extends Composed<HTMLElement>>(
         value: ClassAccessorDecoratorResult<T, string>,
         context: ClassAccessorDecoratorContext<T>,
         shadowHtml: string,
@@ -73,7 +73,7 @@ class ShadowRegistry extends ComposedDecoratorManager {
 }
 
 export function shadowRoot(shadowRootInit: ShadowRootInit) {
-    return function <T extends ComposedComponent>(
+    return function <T extends Composed<HTMLElement>>(
         value: ClassAccessorDecoratorResult<T, string>,
         context: ClassAccessorDecoratorContext<T, string>
     ) {
@@ -91,7 +91,7 @@ export function shadowRoot(shadowRootInit: ShadowRootInit) {
 }
 
 export function shadowStyle() {
-    return function <T extends ComposedComponent>(
+    return function <T extends Composed<HTMLElement>>(
         value: ClassAccessorDecoratorResult<T, string>,
         context: ClassAccessorDecoratorContext<T, string>
     ) {

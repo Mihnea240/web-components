@@ -1,4 +1,4 @@
-import { ComposedDecoratorManager, type ComposedComponent, type ComposedComponentConstructor, type Constructor } from "./compose";
+import { ComposedDecoratorManager, type Composed, type Decorated } from "./compose";
 
 
 type PropertyDecoratorMetadata = {
@@ -8,7 +8,7 @@ type PropertyDecoratorMetadata = {
     listenersAfter?: (string | symbol)[],
 };
 
-class PropertyRegistry extends ComposedDecoratorManager {
+class PropertyRegistry extends ComposedDecoratorManager<HTMLElement, PropertyDecoratorMetadata> {
     static readonly symbol = Symbol("PropertyRegistry");
     private propertyRegistry = new Map<string, PropertyDecoratorMetadata>();
 
@@ -44,7 +44,7 @@ class PropertyRegistry extends ComposedDecoratorManager {
         return registry.propertyRegistry;
     }
 
-    static attributeChangedCallback(this: ComposedComponent, attr: string, oldValue: any, newValue: any) {
+    static attributeChangedCallback(this: Composed<HTMLElement>, attr: string, oldValue: any, newValue: any) {
         const registry = PropertyRegistry.getManager(this.constructor[Symbol.metadata]);;
         const propMeta = registry.getPropertyEntry(attr);
 
@@ -59,7 +59,7 @@ class PropertyRegistry extends ComposedDecoratorManager {
         }
     }
 
-    static connectedCallback(this: ComposedComponent) {
+    static connectedCallback(this: Composed<HTMLElement>) {
         const registry = PropertyRegistry.getManager(this.constructor[Symbol.metadata]);
 
         for (const [attr, { prop, mapper = Mappers.String }] of registry.propertyRegistry.entries()) {
@@ -81,7 +81,7 @@ class PropertyRegistry extends ComposedDecoratorManager {
         }
     }
 
-    static setupPropertyDescriptors(constructor: ComposedComponentConstructor) {
+    static setupPropertyDescriptors(constructor: Decorated<HTMLElement>) {
         const registry = PropertyRegistry.getManager(constructor[Symbol.metadata]);
         const prototype = constructor.prototype;
         
@@ -128,7 +128,7 @@ class PropertyRegistry extends ComposedDecoratorManager {
         }
     }
 
-    static setupObservedAttributes(constructor: Constructor<ComposedComponent>) {
+    static setupObservedAttributes(constructor: Decorated<HTMLElement>) {
         const registry = PropertyRegistry.getManager((constructor as any)[Symbol.metadata]);
         
         // Overwrite observed attributes

@@ -1,30 +1,32 @@
 export type Constructor<T = any> = new (...args: any[]) => T;
 export type AccessorKey = string | symbol;
-export interface ComposedComponent extends HTMLElement {
-	constructor: Constructor<HTMLElement> & {
-		[Symbol.metadata]: DecoratorMetadataObject;
-	};
-	[key: AccessorKey]: any;
-}
-export type ComposedComponentConstructor = Constructor<ComposedComponent> & {
+
+/** Instance of a class decorated with @compose */
+export type Composed<T = any> = T & {
+    constructor: Constructor & { [Symbol.metadata]: DecoratorMetadataObject };
+    [key: AccessorKey]: any;
+};
+
+/** Constructor of a class decorated with @compose */
+export type Decorated<T = any> = Constructor<T> & {
     [Symbol.metadata]: DecoratorMetadataObject;
 };
 
-export type HookMap = {
-	// Statics (The Class Definition)
-	finalize: (constructor: ComposedComponentConstructor) => void;
+export type HookMap<T> = {
+	//Runs with the constructor of the class
+	finalize: (constructor: Decorated<T>) => void;
 
-	constructor: (this: ComposedComponent, ...args: any[]) => void;
-	connectedCallback: (this: ComposedComponent) => void;
-	disconnectedCallback: (this: ComposedComponent) => void;
-	attributeChangedCallback: (this: ComposedComponent, name: string, old: string, next: string) => void;
-	handleEvent: (this: ComposedComponent, event: Event) => void;
+	constructor: (this: T, ...args: any[]) => void;
+	connectedCallback: (this: T) => void;
+	disconnectedCallback: (this: T) => void;
+	attributeChangedCallback: (this: T, name: string, old: string, next: string) => void;
+	handleEvent: (this: T, event: Event) => void;
 
 	// Fallback for custom user hooks
 	[custom: string]: Function;
 };
 
-export abstract class ComposedDecoratorManager {
+export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, Data = any> {
 	private static namespace = Symbol("composed:");
 
 	/**
@@ -39,34 +41,37 @@ export abstract class ComposedDecoratorManager {
 		return dataSpace;
 	}
 
-	hooks: Record<PropertyKey, Set<Function>> = {};
-
 	static getManager<T extends ComposedDecoratorManager>(
 		this: { new(): T; symbol: symbol },
 		metadata: DecoratorMetadata
 	): T {
-		if (!this.symbol) {
-			throw new Error("ComposedDecoratorManager subclasses must have a unique static symbol property.");
-		}
-
 		const namespace = ComposedDecoratorManager.getNamespace(metadata);
 		let manager = namespace[this.symbol] as T | undefined;
 
 		if (!manager) {
-			manager = new this();
-			namespace[this.symbol] = manager;
+			namespace[this.symbol] = manager = new this();
 		}
 		return manager;
 	}
 
+	hooks: Record<PropertyKey, Set<Function>> = {};
+	instanceData: WeakMap<Composed<BaseType>, Data> = new WeakMap();
 
-	addHook<K extends keyof HookMap>(methodName: K, callback: HookMap[K]) {
+	addHook<K extends keyof HookMap<Composed<BaseType>>>(methodName: K, callback: HookMap<Composed<BaseType>>[K]) {
 		this.hooks[methodName] ??= new Set();
 		this.hooks[methodName].add(callback);
 	}
 
 	getHooks(methodName: PropertyKey): Set<Function> {
 		return this.hooks[methodName] ?? new Set();
+	}
+
+	addInstanceData(instance: Composed<BaseType>, data: Data) {
+		this.instanceData.set(instance, data);
+	}
+	
+	getInstanceData(instance: Composed<BaseType>): Data | undefined {
+		return this.instanceData.get(instance);
 	}
 
 	private static collectHooks(metadata: DecoratorMetadata) {
@@ -91,7 +96,7 @@ export abstract class ComposedDecoratorManager {
 	}
 
 	private static applyHooks(prototype: any) {
-		const lifecycleMap = this.collectHooks(prototype[Symbol.metadata] as DecoratorMetadata);
+		const lifecycleMap = this.collectHooks(prototype[Symbol.metadata]);
 
 		if (!lifecycleMap) return prototype.constructor;
 
@@ -131,10 +136,10 @@ export abstract class ComposedDecoratorManager {
 	}
 
 
-	static compose<T extends Constructor<HTMLElement>>(
+	static compose<T extends Constructor>(
 		value: T,
 		context: ClassDecoratorContext<T>,
-	): T {
+	): T & { [Symbol.metadata]: DecoratorMetadataObject } {
 		const metadata = context.metadata;
 		Object.defineProperty(value, Symbol.metadata, {
 			value: metadata,
@@ -146,19 +151,34 @@ export abstract class ComposedDecoratorManager {
 	}
 }
 
-export function compose(tagName: string) {
-	return function <T extends Constructor<HTMLElement>>(
+// Overload: when tagName is provided, constructor must extend HTMLElement
+export function compose(tagName: string): <T extends Constructor<HTMLElement>>(
+	constructor: T, 
+	context: ClassDecoratorContext<T>
+) => T & { [Symbol.metadata]: DecoratorMetadataObject };
+
+// Overload: when tagName is not provided, any constructor is allowed
+export function compose(tagName?: undefined): <T extends Constructor>(
+	constructor: T, 
+	context: ClassDecoratorContext<T>
+) => T & { [Symbol.metadata]: DecoratorMetadataObject };
+
+// Implementation
+export function compose(tagName?: string) {
+	return function <T extends Constructor>(
 		constructor: T,
 		context: ClassDecoratorContext<T>
-	) {
+	): T & { [Symbol.metadata]: DecoratorMetadataObject } {
 		const DecoratedClass = ComposedDecoratorManager.compose(constructor, context);
+		
+		if (tagName && constructor.prototype instanceof HTMLElement) {
+			context.addInitializer(function () {
+				if (!customElements.get(tagName)) {
+					customElements.define(tagName, DecoratedClass);
+				}
+			});
+		}
 
-		context.addInitializer(function () {
-			if (!customElements.get(tagName)) {
-				customElements.define(tagName, DecoratedClass);
-			}
-		});
-
-		return DecoratedClass as T & Constructor<ComposedComponent>;
+		return DecoratedClass;
 	}
 }

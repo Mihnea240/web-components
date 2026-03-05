@@ -1,4 +1,4 @@
-import type { ComposedComponent } from "./compose";
+import type { Composed } from "./compose";
 import { ComposedDecoratorManager } from "./compose";
 
 export type EventDecoratorOptions = {
@@ -25,7 +25,7 @@ const DEFAULT_EVENT_ENTRY: EventListenerEntry = {
     options: {}
 }
 
-class EventRegistry extends ComposedDecoratorManager {
+class EventRegistry extends ComposedDecoratorManager<HTMLElement, never> {
     static symbol = Symbol("EventRegistry");
     private hooksRegistered = false;
 
@@ -61,7 +61,7 @@ class EventRegistry extends ComposedDecoratorManager {
         this.ensureHooksRegistered();
     }
 
-    static handleEventCallback(this: ComposedComponent, event: Event) {
+    static handleEventCallback(this: Composed<HTMLElement>, event: Event) {
         const registry = EventRegistry.getManager(this.constructor[Symbol.metadata]);
         const eventType = event.type;
         const handlers = registry.eventHandlers.get(eventType);
@@ -88,7 +88,7 @@ class EventRegistry extends ComposedDecoratorManager {
         }
     }
 
-    static connectedCallback(this: ComposedComponent) {
+    static connectedCallback(this: Composed<HTMLElement>) {
         const registry = EventRegistry.getManager(this.constructor[Symbol.metadata]);
         for (const [eventType, handlers] of registry.eventHandlers.entries()) {
             for (const { target, options } of handlers) {
@@ -98,7 +98,7 @@ class EventRegistry extends ComposedDecoratorManager {
         }
     }
 
-    static disconnectedCallback(this: ComposedComponent) {
+    static disconnectedCallback(this: Composed<HTMLElement>) {
         const registry = EventRegistry.getManager(this.constructor[Symbol.metadata]);
         for (const [eventType, handlers] of registry.eventHandlers.entries()) {
             for (const { target, options } of handlers) {
