@@ -13,10 +13,10 @@ export type Decorated<T = any> = Constructor<T> & {
 };
 
 export type HookMap<T> = {
-	//Runs with the constructor of the class
+	//Used to add static props. Called with the cosntructor as paramater
 	finalize: (constructor: Decorated<T>) => void;
 
-	constructor: (this: T, ...args: any[]) => void;
+	constructor_hook: (this: T, ...args: any[]) => void;
 	connectedCallback: (this: T) => void;
 	disconnectedCallback: (this: T) => void;
 	attributeChangedCallback: (this: T, name: string, old: string, next: string) => void;
@@ -96,14 +96,14 @@ export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, D
 	}
 
 	private static applyHooks(prototype: any) {
-		const lifecycleMap = this.collectHooks(prototype[Symbol.metadata]);
-
+		const lifecycleMap = this.collectHooks(prototype.constructor[Symbol.metadata]);
 		if (!lifecycleMap) return prototype.constructor;
 
-		const cutomConstructors = lifecycleMap["constructor"];
+		const customConstructors = lifecycleMap["constructor_hook"];
+		const finalizeCallbacks = lifecycleMap["finalize"];
 
 		for (const [methodName, callbacks] of Object.entries(lifecycleMap)) {
-			if (methodName === "constructor") continue;
+			if (methodName === "constructor_hook" || methodName === "finalize") continue;
 
 			const originalMethod = prototype[methodName];
 
@@ -118,11 +118,18 @@ export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, D
 			};
 		}
 
-		if (cutomConstructors) {
+		// Call finalize hooks on the constructor
+		if (finalizeCallbacks) {
+			for (const callback of finalizeCallbacks) {
+				callback(prototype.constructor);
+			}
+		}
+
+		if (customConstructors) {
 			const Wrapper = class extends prototype.constructor {
 				constructor(...args: any[]) {
 					super(...args);
-					for (const callback of cutomConstructors) {
+					for (const callback of customConstructors) {
 						callback.call(this, ...args);
 					}
 				}
@@ -163,7 +170,12 @@ export function compose(tagName?: undefined): <T extends Constructor>(
 	context: ClassDecoratorContext<T>
 ) => T & { [Symbol.metadata]: DecoratorMetadataObject };
 
-// Implementation
+/**
+ * Class decorator that enables composition of multiple decorators on a single class.
+ * Also allows defining a custom element with the provided tag name.
+ * @param tagName Optional tag name to define the custom element as
+ * @returns The decorated class
+ */
 export function compose(tagName?: string) {
 	return function <T extends Constructor>(
 		constructor: T,

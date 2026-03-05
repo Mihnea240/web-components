@@ -3,7 +3,7 @@ import { ComposedDecoratorManager } from "./compose";
 
 export type EventDecoratorOptions = {
     /** Function that returns the element to attach the listener to. @default identity (element itself) */
-    target?: (element: HTMLElement) => HTMLElement | Window | Document;
+    target?: (element: HTMLElement) => EventTarget | null;
     /** CSS selector for event delegation. Only triggers handler if target matches. */
     selector?: string;
     /** Listener options (capture, passive, once). Passed to addEventListener. */
@@ -12,7 +12,7 @@ export type EventDecoratorOptions = {
 
 interface EventListenerEntry {
     methodName: string | symbol;
-    target: (element: HTMLElement) => HTMLElement | Window | Document;
+    target: (element: HTMLElement) => EventTarget | null;
     selector?: string;
     options: AddEventListenerOptions;
 }
@@ -72,6 +72,10 @@ class EventRegistry extends ComposedDecoratorManager<HTMLElement, never> {
             }
 
             const actualTarget = target(this);
+            if (!actualTarget) {
+                continue;
+            }
+
             if (actualTarget !== event.currentTarget) {
                 continue;
             }
@@ -81,7 +85,12 @@ class EventRegistry extends ComposedDecoratorManager<HTMLElement, never> {
                 continue;
             }
 
-            const selectedTarget = (event.target as HTMLElement).closest(selector);
+            const eventTarget = event.target;
+            if (!(eventTarget instanceof Element)) {
+                continue;
+            }
+
+            const selectedTarget = eventTarget.closest(selector);
             if (selectedTarget && (!(actualTarget instanceof Node) || actualTarget.contains(selectedTarget))) {
                 this[methodName](event, selectedTarget);
             }
@@ -93,7 +102,9 @@ class EventRegistry extends ComposedDecoratorManager<HTMLElement, never> {
         for (const [eventType, handlers] of registry.eventHandlers.entries()) {
             for (const { target, options } of handlers) {
                 const actualTarget = target(this);
-                actualTarget.addEventListener(eventType, this as any, options);
+                if (actualTarget) {
+                    actualTarget.addEventListener(eventType, this as any, options);
+                }
             }
         }
     }
@@ -103,7 +114,7 @@ class EventRegistry extends ComposedDecoratorManager<HTMLElement, never> {
         for (const [eventType, handlers] of registry.eventHandlers.entries()) {
             for (const { target, options } of handlers) {
                 const actualTarget = target(this);
-                actualTarget.removeEventListener(eventType, this as any, options);
+                actualTarget?.removeEventListener(eventType, this as any, options);
             }
         }
     }

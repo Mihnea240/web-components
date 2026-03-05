@@ -12,10 +12,10 @@ type SiblingSizeMetadata = {
 };
 
 class ElementSizeData {
-    public element: HTMLElement;
-    public size: number;
-    public min: number;
-    public max: number;
+    public element!: HTMLElement;
+    public size!: number;
+    public min!: number;
+    public max!: number;
 
     constructor(element: HTMLElement, isRow: boolean = true) {
         this.update(element, isRow);

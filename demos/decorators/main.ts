@@ -1,8 +1,10 @@
-import { reflect, watcher, Mappers } from "@decorators/reflect";
-import { compose } from "@decorators/compose";
-import { event } from "@decorators/event";
 import { debounce, throttle } from "@decorators/batch";
+import { compose, type Composed } from "@decorators/compose";
+import { event } from "@decorators/event";
 import { query, queryAll } from "@decorators/query";
+import { Mappers, reflect, watcher } from "@decorators/reflect";
+
+interface SmartCounter extends Composed<HTMLElement> {} 
 
 @compose("smart-counter")
 class SmartCounter extends HTMLElement { 
@@ -18,22 +20,22 @@ class SmartCounter extends HTMLElement {
 
     // 2. Query Selectors: Cache DOM references
     @query(".count-display")
-    accessor countDisplay!: HTMLElement;
+    accessor countDisplay: HTMLElement | null = null;
 
     @query(".increment-btn") 
-    accessor incrementBtn!: HTMLButtonElement;
+    accessor incrementBtn: HTMLButtonElement | null = null;
 
     @query(".decrement-btn")
-    accessor decrementBtn!: HTMLButtonElement;
+    accessor decrementBtn: HTMLButtonElement | null = null;
 
     @queryAll(".number-btn")
     accessor numberButtons!: NodeListOf<HTMLButtonElement>;
 
     @query(".status-indicator")
-    accessor statusIndicator!: HTMLElement;
+    accessor statusIndicator: HTMLElement | null = null;
 
     @query(".search-input")
-    accessor searchInput!: HTMLInputElement;
+    accessor searchInput: HTMLInputElement | null = null;
 
     // 3. Watchers with side effects
     @watcher("count")

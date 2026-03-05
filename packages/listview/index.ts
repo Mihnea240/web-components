@@ -176,7 +176,7 @@ export class ListView extends HTMLElement {
         return this.generator(index);
     }
 
-    toggleShow(child: HTMLElement, force = undefined) {
+    toggleShow(child: HTMLElement, force?: boolean) {
         child.hidden = force === undefined ? !child.hidden : force;
     }
 

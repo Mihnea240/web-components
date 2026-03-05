@@ -6,7 +6,9 @@ type QueryMetadata = {
     options: Required<QueryDecoratorOptions>
 };
 export type AccessorKey = string | symbol;
-export type QueryResult = Element | NodeListOf<Element> | null;
+export type SingleQueryResult = Element | null;
+export type MultiQueryResult = NodeListOf<Element>;
+export type QueryResult = SingleQueryResult | MultiQueryResult;
 export interface QueryDecoratorOptions {
     /** Search in shadow DOM. @default true */
     shadow?: boolean;
@@ -71,7 +73,10 @@ class QueryRegistry extends ComposedDecoratorManager<HTMLElement, never> {
         this.cache.delete(element);
     }
 
-    createAccessor(metadata: QueryMetadata, propName: AccessorKey) {
+    createAccessor<TResult extends QueryResult>(metadata: QueryMetadata, propName: AccessorKey): {
+        get(this: Composed<HTMLElement>): TResult;
+        set(this: Composed<HTMLElement>, value: any): void;
+    } {
         const { selector, queryType, options } = metadata;
 
         return {
@@ -80,7 +85,7 @@ class QueryRegistry extends ComposedDecoratorManager<HTMLElement, never> {
 
                 // Check cache first if caching is enabled
                 if (!options.cache) {
-                    return performQuery(this, selector, queryType, options);
+                    return performQuery(this, selector, queryType, options) as TResult;
                 }
 
                 let cached = registry.getCache(this, propName);
@@ -90,7 +95,7 @@ class QueryRegistry extends ComposedDecoratorManager<HTMLElement, never> {
                     registry.setCache(this, propName, cached);
                 }
 
-                return cached;
+                return cached as TResult;
             },
             set(this: Composed<HTMLElement>, value: any) {
                 // Allow manual setting/clearing of cache
@@ -109,13 +114,15 @@ class QueryRegistry extends ComposedDecoratorManager<HTMLElement, never> {
  * @param options Configuration options
  */
 export function query(selector: string, options?: QueryDecoratorOptions) {
-    const finalOptions = { ...DEFAULT_OPTIONS, ...options };
-
-    return (value: any, context: ClassAccessorDecoratorContext) => {
+    return <TThis extends Composed<HTMLElement>, TValue extends Element | null>(
+        value: ClassAccessorDecoratorTarget<TThis, TValue>,
+        context: ClassAccessorDecoratorContext<TThis, TValue>
+    ): ClassAccessorDecoratorResult<TThis, TValue> => {
         if (context.kind !== "accessor") {
             throw new Error("@query can only be applied to accessors");
         }
 
+        const finalOptions = { ...DEFAULT_OPTIONS, ...options };
         const registry = QueryRegistry.getManager(context.metadata);
         const queryMetadata: QueryMetadata = {
             selector,
@@ -123,7 +130,7 @@ export function query(selector: string, options?: QueryDecoratorOptions) {
             options: finalOptions
         };
 
-        return registry.createAccessor(queryMetadata, context.name);
+        return registry.createAccessor<TValue>(queryMetadata, context.name);
     };
 }
 
@@ -133,13 +140,15 @@ export function query(selector: string, options?: QueryDecoratorOptions) {
  * @param options Configuration options
  */
 export function queryAll(selector: string, options?: QueryDecoratorOptions) {
-    const finalOptions = { ...DEFAULT_OPTIONS, ...options };
-
-    return (value: any, context: ClassAccessorDecoratorContext) => {
+    return <TThis extends Composed<HTMLElement>, TValue extends NodeListOf<Element>>(
+        value: ClassAccessorDecoratorTarget<TThis, TValue>,
+        context: ClassAccessorDecoratorContext<TThis, TValue>
+    ): ClassAccessorDecoratorResult<TThis, TValue> => {
         if (context.kind !== "accessor") {
             throw new Error("@queryAll can only be applied to accessors");
         }
 
+        const finalOptions = { ...DEFAULT_OPTIONS, ...options };
         const registry = QueryRegistry.getManager(context.metadata);
         const queryMetadata: QueryMetadata = {
             selector,
@@ -147,7 +156,7 @@ export function queryAll(selector: string, options?: QueryDecoratorOptions) {
             options: finalOptions
         };
 
-        return registry.createAccessor(queryMetadata, context.name);
+        return registry.createAccessor<TValue>(queryMetadata, context.name);
     };
 }
 

@@ -1,6 +1,8 @@
-import { html, render } from "lit-html"
 import { styleSheet } from "@core/util/styleSheet";
-import { compose, query, reflect, event, queryAll, slotted, watcher } from "@decorators";
+import { compose, event, query, queryAll, reflect, slotted, watcher } from "@decorators";
+import type { Composed } from "@decorators/compose";
+
+export interface TabView extends Composed<HTMLElement> {}
 
 @compose("tab-view")
 export class TabView extends HTMLElement {
@@ -20,7 +22,10 @@ export class TabView extends HTMLElement {
     accessor activeTab: string = "";
 
     @queryAll("button", { cache: false, shadow: false })
-    accessor headers!: HTMLElement[];
+    accessor headers!: NodeListOf<Element>;
+
+    @query('slot[name="tab"]')
+    accessor tabSlot!: HTMLSlotElement;
 
     @slotted('tab')
     accessor tabs!: HTMLElement[];
@@ -37,8 +42,8 @@ export class TabView extends HTMLElement {
     constructor() {
         super();
         this.attachShadow({ mode: 'open', delegatesFocus: true });
-        this.shadowRoot.adoptedStyleSheets = [TabView.styles];
-        this.shadowRoot.innerHTML = TabView.template;
+        this.shadowRoot!.adoptedStyleSheets = [TabView.styles];
+        this.shadowRoot!.innerHTML = TabView.template;
     }
 
     getTheInput(withFor: string) {
@@ -111,10 +116,13 @@ export class TabView extends HTMLElement {
 
     @event('click', { selector: "[slot='header'] [for]" })
     chooseHeader(e: MouseEvent) {
-        this.select((e.target as HTMLElement).getAttribute("for"));
+        const target = e.target;
+        if (target instanceof Element) {
+            this.select(target.getAttribute("for"));
+        }
     }
 
-    select(tab: string | number) {
+    select(tab: string | number | undefined | null) {
         if (tab === undefined || tab === null) {
             return;
         }
@@ -168,7 +176,7 @@ export class TabView extends HTMLElement {
         }
     }
 
-    @event('slotchange', { target: (el) => el.shadowRoot, selector: "[slot=tab]", options: { capture: true } })
+    @event('slotchange', { target: (el) => (el as TabView).tabSlot })
     onTabSlotChange(e: Event) {
         this._syncAria();
     }

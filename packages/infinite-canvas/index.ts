@@ -1,9 +1,11 @@
-import { reflect, watcher, Mappers } from "@decorators/reflect";
-import { compose } from "@decorators/compose";
-import { event } from "@decorators/event";
-import { raf, debounce } from "@decorators/batch";
-import { query } from "@decorators/query";
 import { styleSheet } from "@core/util/styleSheet";
+import { debounce, raf } from "@decorators/batch";
+import { compose, type Composed } from "@decorators/compose";
+import { event } from "@decorators/event";
+import { query } from "@decorators/query";
+import { Mappers, reflect, watcher } from "@decorators/reflect";
+
+export interface InfiniteCanvas extends Composed<HTMLElement> {}
 
 @compose("infinite-canvas")
 export class InfiniteCanvas extends HTMLElement {
@@ -18,7 +20,7 @@ export class InfiniteCanvas extends HTMLElement {
     get scale() { return this.matrix.a; }
 
     @query("[part='canvas']")
-    accessor canvas: HTMLElement;
+    accessor canvas!: HTMLElement;
 
     protected matrix = new DOMMatrix();
     protected inverseMatrix = new DOMMatrix();

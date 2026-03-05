@@ -55,7 +55,7 @@ class ShadowRegistry extends ComposedDecoratorManager<HTMLElement, never> {
         const sheet = styleSheet(cssText);
         registry.styleSheets.push(sheet);
 
-        registry.addHook("constructor", this.constructorInitializer);
+        registry.addHook("constructor_hook", this.constructorInitializer);
     }
 
     static shadowRoot<T extends Composed<HTMLElement>>(
@@ -68,7 +68,7 @@ class ShadowRegistry extends ComposedDecoratorManager<HTMLElement, never> {
         registry.shadowRootInit = init;
         registry.shadowHtml = shadowHtml;
 
-        registry.addHook("constructor", this.constructorInitializer);
+        registry.addHook("constructor_hook", this.constructorInitializer);
     }
 }
 
