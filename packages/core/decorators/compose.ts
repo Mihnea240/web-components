@@ -16,7 +16,6 @@ export type HookMap<T> = {
 	//Used to add static props. Called with the cosntructor as paramater
 	finalize: (constructor: Decorated<T>) => void;
 
-	constructor_hook: (this: T, ...args: any[]) => void;
 	connectedCallback: (this: T) => void;
 	disconnectedCallback: (this: T) => void;
 	attributeChangedCallback: (this: T, name: string, old: string, next: string) => void;
@@ -44,7 +43,16 @@ export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, D
 	static getManager<T extends ComposedDecoratorManager>(
 		this: { new(): T; symbol: symbol },
 		metadata: DecoratorMetadata
-	): T {
+	): T;
+	static getManager<T extends ComposedDecoratorManager>(
+		this: { new(): T; symbol: symbol },
+		metadata: null | undefined
+	): null;
+	static getManager<T extends ComposedDecoratorManager>(
+		this: { new(): T; symbol: symbol },
+		metadata: DecoratorMetadata |null | undefined
+	): T | null {
+		if(!metadata) return null;
 		const namespace = ComposedDecoratorManager.getNamespace(metadata);
 		let manager = namespace[this.symbol] as T | undefined;
 
@@ -103,7 +111,7 @@ export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, D
 		const finalizeCallbacks = lifecycleMap["finalize"];
 
 		for (const [methodName, callbacks] of Object.entries(lifecycleMap)) {
-			if (methodName === "constructor_hook" || methodName === "finalize") continue;
+			if (methodName === "finalize") continue;
 
 			const originalMethod = prototype[methodName];
 
@@ -124,22 +132,6 @@ export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, D
 				callback(prototype.constructor);
 			}
 		}
-
-		if (customConstructors) {
-			const Wrapper = class extends prototype.constructor {
-				constructor(...args: any[]) {
-					super(...args);
-					for (const callback of customConstructors) {
-						callback.call(this, ...args);
-					}
-				}
-			}
-
-			Object.defineProperty(Wrapper, 'name', { value: prototype.constructor.name });
-			return Wrapper;
-		}
-
-		return prototype.constructor;
 	}
 
 
@@ -159,22 +151,30 @@ export abstract class ComposedDecoratorManager<BaseType extends WeakKey = any, D
 }
 
 // Overload: when tagName is provided, constructor must extend HTMLElement
-export function compose(tagName: string): <T extends Constructor<HTMLElement>>(
-	constructor: T, 
-	context: ClassDecoratorContext<T>
-) => T & { [Symbol.metadata]: DecoratorMetadataObject };
+// export function compose(tagName: string): <T extends Constructor<HTMLElement>>(
+// 	constructor: T, 
+// 	context: ClassDecoratorContext<T>
+// ) => T & { [Symbol.metadata]: DecoratorMetadataObject };
 
-// Overload: when tagName is not provided, any constructor is allowed
-export function compose(tagName?: undefined): <T extends Constructor>(
-	constructor: T, 
-	context: ClassDecoratorContext<T>
-) => T & { [Symbol.metadata]: DecoratorMetadataObject };
+// // Overload: when tagName is not provided, any constructor is allowed
+// export function compose(tagName?: undefined): <T extends Constructor>(
+// 	constructor: T, 
+// 	context: ClassDecoratorContext<T>
+// ) => T & { [Symbol.metadata]: DecoratorMetadataObject };
 
 /**
- * Class decorator that enables composition of multiple decorators on a single class.
- * Also allows defining a custom element with the provided tag name.
- * @param tagName Optional tag name to define the custom element as
- * @returns The decorated class
+ * Enables composed hooks and metadata on a class.
+ * Acts as the glue for this decorator system: other decorators register hooks/metadata,
+ * and `@compose` collects those hooks, wires lifecycle wrappers, runs finalize hooks,
+ * and provides `Symbol.metadata` so registries can resolve their per-class managers.
+ *
+ * @param tagName Optional custom element tag name. If set, target class should extend `HTMLElement`.
+ *
+ * @example
+ * ```ts
+ * @compose("my-counter")
+ * class MyCounter extends HTMLElement {}
+ * ```
  */
 export function compose(tagName?: string) {
 	return function <T extends Constructor>(

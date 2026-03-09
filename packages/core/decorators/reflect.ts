@@ -190,9 +190,13 @@ export const Mappers = {
 };
 
 /**
- * Syncs a property to an HTML attribute.
- * @param attrName The name of the attribute to reflect to.
- * @param mapper Optional bi-directional converter (to/from).
+ * Syncs an accessor property (JS side) with an HTML attribute.
+ *
+ * @param attrName Attribute name. Defaults to the accessor name.
+ * @param mapper Optional value mapper with `toAttribute` / `fromAttribute`.
+ * @example
+ * ```ts
+ * \@reflect("my-prop" Mapper.Number) accessor myProp = 2; // Reflected as "my-prop" attribute
  */
 export function reflect(attrName?: string, mapper?: Mapper<any>) {
     return (value: any, context: ClassAccessorDecoratorContext) => {
@@ -214,11 +218,10 @@ export function reflect(attrName?: string, mapper?: Mapper<any>) {
 }
 
 /**
- * Marks a method as a watcher for a specific reflected attribute.
+ * Watches changes for a reflected attribute.
  * 
- * @param attrName - The name of the attribute to observe.
- * @param after - When false (default), the watcher runs before the property is set and can transform the value by returning it.
- *                When true, the watcher runs after the property is set as a pure observer (return value ignored).
+ * @param attrName The reflected attribute name to watch.
+ * @param after If `false` (default), watcher runs before assignment and may return a replacement value. If `true`, runs after assignment and return value is ignored.
  * 
  * @example
  * // Transform/validate before setting (default behavior):

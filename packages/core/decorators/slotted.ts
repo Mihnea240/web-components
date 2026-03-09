@@ -1,11 +1,9 @@
 /**
- * Decorator for class accessors that returns elements assigned to a named slot in the shadow DOM.
- * Optionally filters the assigned elements by a CSS selector and can return a single element or array.
+ * Reads assigned elements from a shadow slot.
  *
- * @param slotName - The name of the slot to query in the shadow DOM (e.g., 'header', 'tab'). 
- *                   Empty string for the default slot.
- * @param selector - Optional CSS selector to filter assigned elements (e.g., '[active]', '.item', 'button').
- * @param single - When true, returns the first matching element or null. When false/undefined, returns an array.
+ * @param slotName Slot name in shadow DOM. Use `""` for default slot.
+ * @param selector Optional CSS selector filter applied to assigned elements.
+ * @param single If `true`, getter returns first match or `null`; otherwise returns all matches.
  * 
  * @example
  * // Returns all elements assigned to the 'tab' slot

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Template Generator Demo</title>
+	<style>
+		body {
+			margin: 40px;
+			font-family: system-ui, -apple-system, sans-serif;
+			line-height: 1.6;
+		}
+
+		.demo {
+			max-width: 900px;
+			margin: 0 auto;
+		}
+
+		section {
+			margin: 40px 0;
+			padding: 20px;
+			border: 1px solid #ddd;
+			border-radius: 8px;
+			background: #f9f9f9;
+		}
+
+		h1 {
+			margin-top: 0;
+		}
+
+		h2 {
+			margin-top: 0;
+			color: #333;
+		}
+
+		button {
+			padding: 8px 16px;
+			margin: 5px;
+			cursor: pointer;
+			border: 1px solid #0066cc;
+			background: #0066cc;
+			color: white;
+			border-radius: 4px;
+			font-size: 14px;
+		}
+
+		button:hover {
+			background: #0052a3;
+		}
+
+		.output {
+			margin: 15px 0;
+			padding: 15px;
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 4px;
+			min-height: 60px;
+		}
+
+		code {
+			background: #eee;
+			padding: 2px 6px;
+			border-radius: 3px;
+			font-family: 'Courier New', monospace;
+		}
+
+		.user-card {
+			border: 1px solid #ddd;
+			padding: 12px;
+			border-radius: 6px;
+			background: white;
+		}
+
+		.user-card strong {
+			display: block;
+			font-size: 16px;
+			margin-bottom: 4px;
+		}
+
+		.user-card .role {
+			color: #666;
+			font-size: 14px;
+		}
+	</style>
+</head>
+<body>
+	<div class="demo">
+		<h1>Template Generator Demo</h1>
+		<p>See <a href="./README.md">README.md</a> for detailed documentation.</p>
+
+		<section>
+			<h2>1. Registry-Based Template</h2>
+			<p>Template registered with descriptor, referenced by name: <code>template="user-card"</code></p>
+			<button id="btn-registry">Update User</button>
+			<div class="output">
+				<template-generator id="gen-registry" template="user-card"></template-generator>
+			</div>
+		</section>
+
+		<section>
+			<h2>2. Document Template by ID</h2>
+			<p>References: <code>template="#badge-template"</code></p>
+			<button id="btn-document">Update Badge</button>
+			<div class="output">
+				<template-generator id="gen-document" template="#badge-template"></template-generator>
+			</div>
+		</section>
+
+		<section>
+			<h2>3. Child Template Element</h2>
+			<p>Template is a direct child of the generator (detected via slotchange)</p>
+			<button id="btn-child">Update Post</button>
+			<div class="output">
+				<template-generator id="gen-child">
+					<template>
+						<article style="border: 1px solid #ddd; padding: 12px; border-radius: 6px; background: white;">
+							<h3 data-title style="margin: 0 0 8px 0;">...</h3>
+							<p data-content style="margin: 0; color: #666;">...</p>
+						</article>
+					</template>
+				</template-generator>
+			</div>
+		</section>
+	</div>
+
+	<!-- Document template referenced by ID -->
+	<template id="badge-template">
+		<div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 20px; background: #e3f2fd; border: 1px solid #90caf9; color: #1565c0; font-weight: 600;">
+			<span data-icon>🔵</span>
+			<span data-label>Status</span>
+		</div>
+	</template>
+
+	<script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -21,9 +21,9 @@ class DebounceManager extends ComposedDecoratorManager<HTMLElement, DebounceInst
 }
 
 /**
- * @debounce
- * Delays method execution until after a specified delay has passed since the last call.
- * @param delay Milliseconds to wait since the last call before executing. @default 250
+ * Multiple calls will result in only one execution after the specified delay from the last call.
+ * Last call wins.
+ * @param delay Delay in milliseconds. Default: 250ms.
  */
 export function debounce(delay: number = 250) {
     return function (value: Function, context: ClassMethodDecoratorContext) {
@@ -63,9 +63,8 @@ class ThrottleManager extends ComposedDecoratorManager<HTMLElement, ThrottleInst
 }
 
 /**
- * @throttle
- * Ensures a method is called at most once per delay.
- * @param delay Milliseconds between allowed calls. @default 250
+ * Throttles method calls.
+ * @param delay Minimum milliseconds between executions. Default: `250`.
  */
 export function throttle(delay: number = 250) {
     return function (value: Function, context: ClassMethodDecoratorContext) {
@@ -100,8 +99,7 @@ class RAFManager extends ComposedDecoratorManager<HTMLElement, RAFInstanceData> 
 }
 
 /**
- * @raf
- * Batches calls to the next animation frame.(Request Animation Frame)
+ * Batches method calls to `requestAnimationFrame`.
  */
 export function raf() {
     return function (value: Function, context: ClassMethodDecoratorContext) {
@@ -137,11 +135,7 @@ class MicroBatchManager extends ComposedDecoratorManager<HTMLElement, MicroBatch
 }
 
 /**
- * @microBatch
- * Batches calls to the next microtask, ensuring it runs after the current synchronous code but before the next frame.
- * Useful for coalescing multiple rapid calls without waiting for a full animation frame.
- * Note: This is similar to @debounce with a delay of 0, but uses microtasks for more immediate batching.
- *       It will execute after the current call stack is cleared, but before any pending rendering or I/O.
+ * Batches method calls to the next microtask.
  */
 export function microBatch() {
     return function (value: Function, context: ClassMethodDecoratorContext) {

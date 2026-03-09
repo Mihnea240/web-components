@@ -1,9 +1,11 @@
 import { raf } from "@core/decorators/batch";
-import { compose } from "@core/decorators/compose";
-import { styleSheet } from "@core/util/styleSheet";
+import { compose, type Composed } from "@core/decorators/compose";
 import { Mappers, reflect, watcher } from "@decorators/reflect";
+import { shadowRoot, shadowStyle } from "@decorators/shadow";
 
 import { createObservableArray } from "@core/util/arrayProxy";
+
+export interface ListView extends Composed<HTMLElement> {}
 
 /**@description Creates a new element that will be used to display the data */
 function template(): HTMLElement {
@@ -45,12 +47,15 @@ export class ListView extends HTMLElement {
     private publicList: any[] = [];
     private listMode = true;
 
-    static styleSheet = styleSheet(/*css */`
+    @shadowRoot()
+    accessor root: string = /*html */`<slot></slot>`;
+
+    @shadowStyle()
+    accessor rootStyle: string = /*css */`
         ::slotted([hidden]) {
             display: none !important;
         }
-    `);
-    static shadowDom = /*html */`<slot></slot>`;
+    `;
 
     static getListId(node: HTMLElement) {
         return Number(node.dataset.listIndex);
@@ -67,9 +72,7 @@ export class ListView extends HTMLElement {
 
     constructor() {
         super();
-        this.attachShadow({ mode: "open" }).innerHTML = ListView.shadowDom;
         const internals = this.attachInternals();
-        this.shadowRoot!.adoptedStyleSheets = [ListView.styleSheet];
 
         internals.role = "list";
     }

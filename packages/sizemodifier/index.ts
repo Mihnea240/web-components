@@ -1,8 +1,8 @@
-import { reflect, watcher, Mappers } from "@decorators/reflect";
-import { compose } from "@decorators/compose";
-import { event } from "@decorators/event";
-import { styleSheet } from "@core/util/styleSheet";
 import { raf } from "@core/decorators/batch";
+import { compose, type Composed } from "@decorators/compose";
+import { event } from "@decorators/event";
+import { Mappers, reflect, watcher } from "@decorators/reflect";
+import { shadowRoot, shadowStyle } from "@decorators/shadow";
 
 type SiblingSizeMetadata = {
     element: HTMLElement;
@@ -32,6 +32,8 @@ class ElementSizeData {
     }
 }
 
+export interface SizeModifier extends Composed<HTMLElement> { }
+
 @compose("size-modifier")
 export class SizeModifier extends HTMLElement {
     // --- Public API ---
@@ -52,7 +54,11 @@ export class SizeModifier extends HTMLElement {
     private nextSiblings: ElementSizeData[] = [];
     private internals: ElementInternals;
 
-    static styleSheet = styleSheet(/*css*/`
+    @shadowRoot()
+    accessor root: string = "<!-- size-modifier-shadow-root -->";
+
+    @shadowStyle()
+    accessor rootStyle: string = /*css*/`
             :host {
                 display: block;
                 flex: 0 0 6px;
@@ -61,11 +67,10 @@ export class SizeModifier extends HTMLElement {
             }
             :host([direction="row"]) { width: 6px; height: 100%; cursor: ew-resize; min-width: 6px; max-width: 6px; }
             :host([direction="column"]) { width: 100%; height: 6px; cursor: ns-resize; min-height: 6px; max-height: 6px; }
-        `);
+        `;
 
     constructor() {
         super();
-        this.attachShadow({ mode: "open" }).adoptedStyleSheets = [SizeModifier.styleSheet];
         this.internals = this.attachInternals();
         this.internals.role = "separator";
         this.internals.ariaOrientation = "vertical";

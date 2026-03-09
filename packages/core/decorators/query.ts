@@ -109,9 +109,13 @@ class QueryRegistry extends ComposedDecoratorManager<HTMLElement, never> {
 }
 
 /**
- * Queries for a single element and caches the result.
- * @param selector CSS selector to query for
- * @param options Configuration options
+ * Resolves one element with `querySelector` for an accessor.
+ *
+ * @param selector CSS selector.
+ * @param options Query behavior options.
+ * @param options.shadow If `true` (default), query shadow root first; else query host.
+ * @param options.cache If `true` (default), cache resolved value.
+ * @param options.required If `true`, throw when query returns no element.
  */
 export function query(selector: string, options?: QueryDecoratorOptions) {
     return <TThis extends Composed<HTMLElement>, TValue extends Element | null>(
@@ -135,9 +139,13 @@ export function query(selector: string, options?: QueryDecoratorOptions) {
 }
 
 /**
- * Queries for multiple elements and caches the result.
- * @param selector CSS selector to query for
- * @param options Configuration options
+ * Resolves many elements with `querySelectorAll` for an accessor.
+ *
+ * @param selector CSS selector.
+ * @param options Query behavior options.
+ * @param options.shadow If `true` (default), query shadow root first; else query host.
+ * @param options.cache If `true` (default), cache resolved value.
+ * @param options.required Accepted for API symmetry; does not affect empty NodeList behavior.
  */
 export function queryAll(selector: string, options?: QueryDecoratorOptions) {
     return <TThis extends Composed<HTMLElement>, TValue extends NodeListOf<Element>>(

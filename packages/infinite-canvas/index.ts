@@ -1,9 +1,9 @@
-import { styleSheet } from "@core/util/styleSheet";
 import { debounce, raf } from "@decorators/batch";
 import { compose, type Composed } from "@decorators/compose";
 import { event } from "@decorators/event";
 import { query } from "@decorators/query";
 import { Mappers, reflect, watcher } from "@decorators/reflect";
+import { shadowRoot, shadowStyle } from "@decorators/shadow";
 
 export interface InfiniteCanvas extends Composed<HTMLElement> {}
 
@@ -26,7 +26,13 @@ export class InfiniteCanvas extends HTMLElement {
     protected inverseMatrix = new DOMMatrix();
     protected interacting = false;
 
-    static styleSheet = styleSheet(/*css*/`
+    @shadowRoot()
+    accessor root: string = /*html*/`
+        <div part="canvas"><slot></slot></div>
+    `;
+
+    @shadowStyle()
+    accessor rootStyle: string = /*css*/`
         :host {
             display: block;
             position: relative;
@@ -39,18 +45,7 @@ export class InfiniteCanvas extends HTMLElement {
             transform-origin: 0 0;
             will-change: transform;
         }
-    `);
-
-    static shadowDom = /*html*/`
-        <div part="canvas"><slot></slot></div>
     `;
-
-    constructor() {
-        super();
-        const root = this.attachShadow({ mode: "open" });
-        root.adoptedStyleSheets = [InfiniteCanvas.styleSheet];
-        root.innerHTML = InfiniteCanvas.shadowDom;
-    }
 
     connectedCallback() {
         this.matrix = new DOMMatrix().translate(this.committedX, this.committedY).scale(this.committedScale);

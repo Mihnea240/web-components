@@ -1,22 +1,23 @@
-import { styleSheet } from "@core/util/styleSheet";
 import { compose, event, query, queryAll, reflect, slotted, watcher } from "@decorators";
 import type { Composed } from "@decorators/compose";
+import { shadowRoot, shadowStyle } from "@decorators/shadow";
 
 export interface TabView extends Composed<HTMLElement> {}
 
 @compose("tab-view")
 export class TabView extends HTMLElement {
 
-    static styles = styleSheet(/*css */`
-    `);
-
-    static template = /*html*/`
+    @shadowRoot({ mode: "open", delegatesFocus: true })
+    accessor root: string = /*html*/`
        <slot name="header"></slot>
         <div part="tabs">
             <slot name="tab"></slot>
         </div>
 		<slot></slot>
     `;
+
+    @shadowStyle()
+    accessor rootStyle: string = /*css */``;
 
     @reflect('active-tab')
     accessor activeTab: string = "";
@@ -38,13 +39,6 @@ export class TabView extends HTMLElement {
 
     @slotted('header', '[for]', true)
     accessor headerContainer!: HTMLElement | null;
-
-    constructor() {
-        super();
-        this.attachShadow({ mode: 'open', delegatesFocus: true });
-        this.shadowRoot!.adoptedStyleSheets = [TabView.styles];
-        this.shadowRoot!.innerHTML = TabView.template;
-    }
 
     getTheInput(withFor: string) {
         if (!withFor) return null;
@@ -185,7 +179,7 @@ export class TabView extends HTMLElement {
         selector: `[slot=header] [for], [slot = header] select, [slot = header] input,
             select[slot=header], input[slot=header]`
     })
-    onInput(e: InputEvent) {
+    onInput(e: Event) {
         const target = e.target as HTMLInputElement;
         const list = target.list;
         const value = target.value;

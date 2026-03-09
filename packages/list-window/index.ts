@@ -1,13 +1,19 @@
-import { reflect, watcher } from "@decorators/reflect"
+import { compose, type Composed } from "@core/decorators/compose";
 import { query } from "@decorators/query";
-import { compose } from "@core/decorators/compose";
-import { event } from "@core/decorators/event";
-import { raf, microBatch } from "@core/decorators/batch";
-import { styleSheet } from "@core/util/styleSheet";
+import { shadowRoot, shadowStyle } from "@decorators/shadow";
+
+export interface ListWindow extends Composed<HTMLElement> {}
 
 @compose("list-window")
 export class ListWindow extends HTMLElement {
-    static styleSheet = styleSheet(/*css*/`
+    @shadowRoot()
+    accessor root: string = /*html*/`
+        <div id="spacer"></div>
+        <div id="container"></div>
+    `;
+
+    @shadowStyle()
+    accessor rootStyle: string = /*css*/`
         :host {
             display: block;
             height: 400px;
@@ -25,13 +31,8 @@ export class ListWindow extends HTMLElement {
             border-bottom: 1px solid #eee;
         }
 
-    `);
-
-    static shadowDom = /*html*/`
-        <div id="spacer"></div>
-        <div id="container"></div>
     `;
 
-    @query("#spacer") accessor spacer: HTMLElement;
-    @query("#container") accessor container: HTMLElement;
+    @query("#spacer") accessor spacer: HTMLElement = null!;
+    @query("#container") accessor container: HTMLElement = null!;
 }

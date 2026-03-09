@@ -4,4 +4,5 @@ export { reflect, watcher, Mappers } from "./reflect";
 export { event } from "./event";
 export { debounce, throttle } from "./batch";
 export { query, queryAll, clearQueryCache } from "./query";
+export { shadowRoot, shadowStyle } from "./shadow";
 export { slotted } from "./slotted";

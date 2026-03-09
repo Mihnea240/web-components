@@ -264,6 +264,44 @@ class FormWidget extends HTMLElement {
 - Cache is automatically cleared when elements are removed
 - Call `clearQueryCache(element)` to manually clear cache
 
+### @shadowRoot / @shadowStyle
+
+Declarative Shadow DOM setup for components, without manual `attachShadow`, `innerHTML`, or `adoptedStyleSheets` in constructors.
+
+`@shadowRoot`:
+- Defines the shadow root template from a decorated accessor.
+- Creates the shadow root once per instance.
+- Uses first-write-wins at class registry level, so repeated instance initialization is ignored.
+
+`@shadowStyle`:
+- Registers CSS text from a decorated accessor.
+- Builds and adopts constructable stylesheets automatically.
+- Deduplicates identical CSS text to avoid duplicate stylesheet entries.
+
+```typescript
+import { compose, shadowRoot, shadowStyle } from "@decorators";
+
+@compose("x-panel")
+class XPanel extends HTMLElement {
+    @shadowRoot({ mode: "open", delegatesFocus: true })
+    accessor rootTemplate = /*html*/`
+        <header part="title"><slot name="title"></slot></header>
+        <main part="content"><slot></slot></main>
+    `;
+
+    @shadowStyle()
+    accessor rootCss = /*css*/`
+        :host { display: block; }
+        [part="title"] { font-weight: 600; }
+    `;
+}
+```
+
+**Important Notes:**
+- Use string accessors (`accessor ...: string = ...`) for both decorators.
+- `init` runs per instance. This is expected and safe; registration is idempotent.
+- Prefer this pattern over constructor-level shadow wiring for consistency.
+
 ## API Reference
 
 ### Composition System
@@ -308,6 +346,12 @@ interface QueryDecoratorOptions {
     cache?: boolean;
     required?: boolean;
 }
+```
+
+### Shadow DOM
+```typescript
+function shadowRoot(shadowRootInit?: ShadowRootInit): ClassAccessorDecorator
+function shadowStyle(): ClassAccessorDecorator
 ```
 
 ---
