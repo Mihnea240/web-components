@@ -1,33 +1,74 @@
 import type { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
 
+export type NodePort = {
+    targetNode: string;
+    // sideEffect?: (event: Event, head: HeadPointer) => void;
+}
 
+export type NodeRouter = {
+    fail: NodePort;
+    success: NodePort;
+    [portName: string]: NodePort;
+}
 
-export abstract class BaseNode {
-    private transitionsMap = new Map<string, string>();
-
-    constructor(public name: string) {
+export class NodeState {
+    public normalizedTime = 0;
+    constructor(public startTime = 0) {
     }
 
-    bindTransition(port: string, targetNode: string) {
-        this.transitionsMap.set(port, targetNode);
+    newTimestamp(timeStamp: number) {
+        this.normalizedTime = timeStamp - this.startTime;
+    }
+}
+
+export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRouter = NodeRouter> {
+    protected timeoutValue = Infinity;
+    private configuredPorts: P | null;
+
+    constructor(public name: string, ports?: P) {
+        this.configuredPorts = ports ?? null;
     }
 
-    getTransition(port: string): string | null {
-        return this.transitionsMap.get(port) ?? null;
+    get ports(): P {
+        if (!this.configuredPorts) {
+            throw new Error(`Ports are not configured for node "${this.name}".`);
+        }
+
+        return this.configuredPorts;
+    }
+
+    setPorts(ports: P): this {
+        if (this.configuredPorts) {
+            throw new Error(`Ports are already configured for node "${this.name}".`);
+        }
+
+        this.configuredPorts = ports;
+        return this;
+    }
+
+    timeout(ms: number) {
+        this.timeoutValue = ms;
+        return this;
     }
 
     static observedSignals: string[] = [];
-    abstract handleSignal(type: string, event: Event, head: HeadPointer): string | null | void | undefined;
-    abstract onEnter(head: HeadPointer): void;
-    abstract onExit(head: HeadPointer): void;
+    abstract handleSignal(type: string, event: Event, head: HeadPointer): NodePort | null;
+    abstract checkConditions(state: T): NodePort | null;
 
-    protected fireSignal(type: string, event: Event, head: HeadPointer) {
-        return this.handleSignal(type, event, head) ?? "";
+    abstract onExit(head: HeadPointer): void;
+    onEnter(head: HeadPointer): void { }
+
+    onSignal(type: string, event: Event, head: HeadPointer): NodePort | null {
+        return this.handleSignal(type, event, head);
     }
 
-    onSignal(type: string, event: Event, head: HeadPointer): string | null {
-        return this.transitionsMap.get(this.fireSignal(type, event, head)) ?? null;
+    getMetadata(head: HeadPointer): T {
+        return head.data[this.name] as T;
+    }
+
+    setMetadata(head: HeadPointer, value: T) {
+        head.data[this.name] = value;
     }
 
     filterSignal(type: string): boolean {
@@ -45,14 +86,34 @@ export abstract class BaseNode {
     }
 }
 
-export abstract class TickingNode extends BaseNode {
-    abstract onTick(event: TickEvent, head: HeadPointer): string | null | void | undefined;
+export abstract class TickingNode<
+    T extends NodeState = NodeState,
+    P extends NodeRouter = NodeRouter
+> extends BaseNode<T, P> {
 
-    fireSignal(type: string, event: Event, head: HeadPointer) {
-        if (type === "tick") {
-            return this.onTick(event as TickEvent, head) ?? "";
+    onEnter(head: HeadPointer): void {
+        this.setMetadata(head, new NodeState(performance.now()) as T);
+    }
+
+    onTick(event: TickEvent, head: HeadPointer): NodePort | null {
+        const state = head.data[this.name];
+        if (!state) {
+            return null;
+        }
+        
+        state.newTimestamp(event.timeStamp);
+        return this.checkConditions(state as T);
+    }
+
+    checkConditions(state: T): NodePort | null {
+        if (state.normalizedTime >= this.timeoutValue) {
+            return this.ports.fail;
         }
 
-        return super.fireSignal(type, event, head);
+        return this.checkLocalConditions(state);
+    }
+
+    protected checkLocalConditions(state: T): NodePort | null {
+        return null;
     }
 }
