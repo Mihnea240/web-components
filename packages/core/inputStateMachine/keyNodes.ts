@@ -1,8 +1,31 @@
-import { TickingNode } from "./baseNode";
+import { NodeState, TickingNode, type NodePort } from "./baseNode";
 import type { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
 
-export class KeyNode extends TickingNode {
+class KeyNodeState extends NodeState {
+    public localTime!: number;
+    public pressCount!: number;
+    public heldTime!: number;
+    public lastPressTime!: number;
+    public lastReleaseTime!: number;
+    public isDown!: boolean;
+
+    constructor(startTime: number) {
+        super(startTime);
+        this.clear();
+    }
+
+    clear() {
+        this.localTime = 0;
+        this.pressCount = 0;
+        this.heldTime = 0;
+        this.lastPressTime = 0;
+        this.lastReleaseTime = 0;
+        this.isDown = false;
+    }
+}
+
+export class KeyNode extends TickingNode<KeyNodeState> {
     static observedSignals = ["keydown", "keyup"];
     public keys: string[];
 
@@ -41,11 +64,6 @@ export class KeyNode extends TickingNode {
         return this;
     }
 
-    hold(deltaTime: number) {
-        this.requieredHoldTime += deltaTime;
-        return this;
-    }
-
     isKeyMine(event: KeyboardEvent) {
         const shift = event.shiftKey ? "shift" : "";
         const ctrl = event.ctrlKey ? "ctrl" : "";
@@ -61,11 +79,15 @@ export class KeyNode extends TickingNode {
             return null;
         }
 
-        const state = head.data[this.name];
+        const state = this.getMetadata(head);
+        if(!state) {
+            return null;
+        }
+
         const now = event.timeStamp;
 
         // Reset press count if the last press was outside the press window
-        if(now - state.lastPressTime > this.pressWindow) {
+        if (now - state.lastPressTime > this.pressWindow) {
             state.pressCount = 0;
         }
 
@@ -83,16 +105,19 @@ export class KeyNode extends TickingNode {
     }
 
     handleKeyUp(event: KeyboardEvent, head: HeadPointer) {
-        const state = head.data[this.name];
+        const state = this.getMetadata(head);
+        if(!state) {
+            return null;
+        }
         const now = event.timeStamp;
-        
+
         state.isDown = false;
         state.heldTime = now - state.lastPressTime;
         state.lastReleaseTime = now;
 
         if (this.triggerOnRelease) {
             state.pressCount++;
-        }else{
+        } else {
             state.pressCount = 0; // Reset press count if we're not triggering on release
         }
 
@@ -102,7 +127,11 @@ export class KeyNode extends TickingNode {
     }
 
     onTick(event: TickEvent, head: HeadPointer) {
-        const state = head.data[this.name];
+        const superState = super.onTick(event, head);
+        if (superState) {
+            return superState;
+        }
+        const state = this.getMetadata(head);
         if (!state) {
             return null;
         }
@@ -113,44 +142,37 @@ export class KeyNode extends TickingNode {
             state.heldTime = 0;
         }
 
-        return this.checkConditions(state); 
+        return this.checkLocalConditions(state);
     }
 
-    checkConditions(state: any) {
-        if(state.pressCount < this.requieredPressCount || state.heldTime < this.requieredHoldTime) {
+    protected checkLocalConditions(state: KeyNodeState): NodePort | null {
+        if (state.pressCount < this.requieredPressCount || state.heldTime < this.requieredHoldTime) {
             return null;
         }
 
-        if(this.triggerOnPress && !state.isDown) {
+        if (this.triggerOnPress && !state.isDown) {
             return null;
         }
 
-        if(this.triggerOnRelease && state.isDown) {
+        if (this.triggerOnRelease && state.isDown) {
             return null;
         }
 
-        return "SUCCESS";
+        return this.ports.success;
     }
 
-    onEnter(head : HeadPointer) {
-        head.data[this.name] = {
-            localTime: 0,
-            pressCount: 0,
-            heldTime: 0,
-            lastPressTime: 0,
-            lastReleaseTime: 0,
-            isDown: false
-        }
+    onEnter(head: HeadPointer) {
+        this.setMetadata(head, new KeyNodeState(performance.now()));
     }
 
     onExit(head: HeadPointer) {
-        
+        this.getMetadata(head)?.clear();
     }
 
     isWakeUpSignal(type: string, event: Event): boolean {
         return super.isWakeUpSignal(type, event) && this.isKeyMine(event as KeyboardEvent);
     }
-    
+
     handleSignal(type: string, event: KeyboardEvent, head: HeadPointer, data?: any) {
         if (!this.isKeyMine(event)) {
             return null;

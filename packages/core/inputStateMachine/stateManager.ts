@@ -1,10 +1,18 @@
+import getOrCompute from "@core/util/getOrCompute";
 import { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
 import type { StateMachine } from "./stateMachine";
 
+export type TransitionEventType = `${string}:${string}->${string}`;
+export type TransitionHandler = (head: HeadPointer, eventType: TransitionEventType) => void;
+
 export class StateManager {
     private stateMachines = new Map<string, StateMachine>();
     private heads = new Set<HeadPointer>();
+    private transitionCallbacks = new Map<
+        TransitionEventType | "ALL",
+        Array<TransitionHandler>
+    >();
 
     private createHeadPointer(stateMachineName: string): HeadPointer | null {
         const machine = this.getStateMachine(stateMachineName);
@@ -41,6 +49,27 @@ export class StateManager {
         }
     }
 
+    addTransitionListener(eventType: TransitionEventType | "ALL", callback: TransitionHandler) {
+        getOrCompute(this.transitionCallbacks, eventType, () => []).push(callback);
+    }
+
+    removeTransitionCallbacks(eventType: TransitionEventType | "ALL", callback: TransitionHandler) {
+        const callbacks = this.transitionCallbacks.get(eventType);
+        if (!callbacks) return;
+
+        const index = callbacks.indexOf(callback);
+        if (index !== -1) {
+            callbacks.splice(index, 1);
+        }
+    }
+
+    handleTransitionEvent(eventType: TransitionEventType, head: HeadPointer) {
+        const callbacks = this.transitionCallbacks.get(eventType);
+        const allCallbacks = this.transitionCallbacks.get("ALL");
+
+        allCallbacks?.forEach(callback => callback(head, eventType));
+        callbacks?.forEach(callback => callback(head, eventType));
+    }
 
     collectSignalTypes() {
         return new Set(this.stateMachines.values().flatMap(machine => machine.collectSignalTypes()));

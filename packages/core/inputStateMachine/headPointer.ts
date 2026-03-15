@@ -1,13 +1,13 @@
-import { TickingNode, type BaseNode } from "./baseNode";
+import { NodeState, TickingNode, type BaseNode, type NodePort } from "./baseNode";
 import type { TickEvent } from "./signalProvider";
 import type { StateMachine } from "./stateMachine";
-import type { StateManager } from "./stateManager";
+import type { StateManager, TransitionEventType } from "./stateManager";
 
 export class HeadPointer {
     public activeNode: BaseNode | null = null;
     public previousNode: BaseNode | null = null;
     public maxNodeTransitions = 32;
-    public data = {};
+    public data: Record<string, NodeState> = {};
 
     constructor(
         public stateManager: StateManager,
@@ -15,20 +15,42 @@ export class HeadPointer {
     ) {
     }
 
-    private transitionTo(newState: string, lastState: string | null) {
-        if (!this.activeNode || !newState) {
+    private emitTransitionEvent(fromState: string, toState: string) {
+        this.stateManager.handleTransitionEvent(
+            `${this.stateMachine.name}:${fromState}->${toState}` as TransitionEventType,
+            this,
+        );
+    }
+
+    private transitionTo(port: NodePort, event: Event, lastState: string | null) {
+        if (!this.activeNode || !port?.targetNode) {
             return null;
         }
 
+        const currentNode = this.activeNode;
+        const fromState = lastState ?? currentNode.name;
+        const newState = port.targetNode;
+
         if (newState === "IDLE") {
-            this.activeNode.onExit(this);
+            currentNode.onExit(this);
+            this.previousNode = currentNode;
+            this.emitTransitionEvent(fromState, newState);
             return "IDLE";
         }
 
-        if (newState === lastState) {
+        if (newState === "SUCCESS") {
+            currentNode.onExit(this);
+            this.previousNode = currentNode;
+            this.emitTransitionEvent(fromState, newState);
+            return "IDLE";
+        }
+
+        if (newState === fromState) {
             // Self-transition: reset lifecycle (exit then re-enter) but stop composition
-            this.activeNode.onExit(this);
-            this.activeNode.onEnter(this);
+            currentNode.onExit(this);
+            currentNode.onEnter(this);
+            this.previousNode = currentNode;
+            this.emitTransitionEvent(fromState, newState);
             return newState;
         }
 
@@ -39,11 +61,12 @@ export class HeadPointer {
         }
 
         // Exit current node, then enter new node
-        const oldNode = this.activeNode;
+        const oldNode = currentNode;
         oldNode.onExit(this);
         this.previousNode = oldNode;
         this.activeNode = newNode;
         this.activeNode.onEnter(this);
+        this.emitTransitionEvent(fromState, newState);
         return newState;
     }
 
@@ -56,12 +79,12 @@ export class HeadPointer {
                 break;
             }
             
-            const nextState = node.onSignal(type, event, this);
-            if (!nextState) {
+            const nextPort = node.onSignal(type, event, this);
+            if (!nextPort) {
                 break;
             }
 
-            const result = this.transitionTo(nextState, node.name);
+            const result = this.transitionTo(nextPort, event, node.name);
             transitions++;
 
             if (result === "IDLE") return "IDLE";
@@ -78,8 +101,11 @@ export class HeadPointer {
         if (!this.activeNode || !(this.activeNode instanceof TickingNode)) {
             return null;
         }
-        
-        const newState = this.activeNode.onTick(event, this) ?? "";
-        return this.transitionTo(newState, this.activeNode.name);
+        console.log(this.data);
+        const port = this.activeNode.onTick(event, this);
+        if (!port) {
+            return null;
+        }
+        return this.transitionTo(port, event, this.activeNode.name);
     }
 }

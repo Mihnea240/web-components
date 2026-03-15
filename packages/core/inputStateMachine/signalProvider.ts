@@ -41,7 +41,6 @@ export class SignalProvider {
         this.tickEvent.detail.deltaTime = deltaTime;
 
         this.stateManager.tick(this.tickEvent);
-
         this.animationID = requestAnimationFrame(this.tick);
     }
 
