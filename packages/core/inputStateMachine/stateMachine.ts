@@ -1,8 +1,8 @@
 import { TickingNode, type BaseNode } from "./baseNode";
 
 export class StateMachine {
-    private nodes = new Map<string, BaseNode>();
-    public root: BaseNode | null = null;
+    private nodes = new Map<string, BaseNode<any, any>>();
+    public root!: BaseNode<any, any>;
 
     public locked = false;
 
@@ -10,22 +10,28 @@ export class StateMachine {
 
     }
 
-    rootNode(node: BaseNode) {
-        this.addNode(node);
+
+    rootNode(node: BaseNode<any, any>) {
         this.root = node;
         return this;
     }
 
-    addNode(node: BaseNode) {
-        this.nodes.set(node.name, node);
+    addNode(...nodes: BaseNode<any, any>[]): this {
+        for (const node of nodes) {
+            if (this.nodes.has(node.name)) {
+                throw new Error(`Node with name ${node.name} already exists in the state machine`);
+            }
+            this.nodes.set(node.name, node);
+        }
+        return this;
     }
 
-    getNode(nodeName: string): BaseNode | null {
+    getNode(nodeName: string): BaseNode<any, any> | null {
         return this.nodes.get(nodeName) ?? null;
     }
 
     isWakeupSignal(type: string, event: Event) {
-        return this.root?.isWakeUpSignal(type, event) ?? false;
+        return this.root?.isWakeupSignal(type, event) ?? false;
     }
 
     hasTickingNodes(): boolean {

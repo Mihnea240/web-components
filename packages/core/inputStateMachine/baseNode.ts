@@ -22,45 +22,50 @@ export class NodeState {
     }
 }
 
+const defaultPorts: NodeRouter = {
+    success: { targetNode: "SUCCESS" },
+    fail: { targetNode: "IDLE" },
+};
+
 export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRouter = NodeRouter> {
-    protected timeoutValue = Infinity;
-    private configuredPorts: P | null;
-
-    constructor(public name: string, ports?: P) {
-        this.configuredPorts = ports ?? null;
-    }
-
-    get ports(): P {
-        if (!this.configuredPorts) {
-            throw new Error(`Ports are not configured for node "${this.name}".`);
-        }
-
-        return this.configuredPorts;
-    }
-
-    setPorts(ports: P): this {
-        if (this.configuredPorts) {
-            throw new Error(`Ports are already configured for node "${this.name}".`);
-        }
-
-        this.configuredPorts = ports;
-        return this;
-    }
-
-    timeout(ms: number) {
-        this.timeoutValue = ms;
-        return this;
-    }
-
     static observedSignals: string[] = [];
-    abstract handleSignal(type: string, event: Event, head: HeadPointer): NodePort | null;
-    abstract checkConditions(state: T): NodePort | null;
 
+    public ports: P = defaultPorts as any;
+    private conditions: Array<(state: T) => NodePort | null> = [];
+    public strictMode = false;
+    constructor(public name: string) {
+    }
+
+    setPorts(ports: Partial<P>): this {
+        this.ports = {...this.ports, ...ports};
+        return this;
+    }
+
+    strict(value = true): this {
+        this.strictMode = value;
+        return this;
+    }
+
+    abstract handleSignal(type: string, event: Event, head: HeadPointer): boolean;
     abstract onExit(head: HeadPointer): void;
-    onEnter(head: HeadPointer): void { }
+    abstract onEnter(head: HeadPointer): void;
 
     onSignal(type: string, event: Event, head: HeadPointer): NodePort | null {
-        return this.handleSignal(type, event, head);
+        const mySignal = this.filterSignal(type);
+        if (!mySignal) {
+            return null;
+        }
+
+        const relevantSignal = this.isRelevantSignal(type, event);
+        if (this.strictMode && !relevantSignal) {
+            return this.ports.fail;
+        }
+
+        if (relevantSignal && this.handleSignal(type, event, head)) {
+            return this.evaluateConditions(this.getMetadata(head));
+        }
+
+        return null;
     }
 
     getMetadata(head: HeadPointer): T {
@@ -71,17 +76,48 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
         head.data[this.name] = value;
     }
 
+    addCondition(condition: (state: T) => NodePort | null): this {
+        this.conditions.push(condition);
+        return this;
+    }
+
+    clearConditions(): this {
+        this.conditions = [];
+        return this;
+    }
+
+    evaluateConditions(state: T): NodePort | null {
+        let result: any = null;
+        for (const condition of this.conditions) {
+            result = condition.call(this, state);
+            if (result) {
+                break;
+            }
+        }
+
+        return result;
+    }
+
     filterSignal(type: string): boolean {
+        let found = false;
         for (let klass = this.constructor as typeof BaseNode; klass !== BaseNode; klass = Object.getPrototypeOf(klass) as typeof BaseNode) {
+            if(!klass.observedSignals || klass.observedSignals.length === 0) {
+                continue;
+            }
+            found = true;
             if (klass.observedSignals.includes(type)) {
                 return true;
             }
         }
 
-        return false;
+        return !found; // If no observedSignals defined in the hierarchy, consider all signals relevant
     }
 
-    isWakeUpSignal(type: string, event: Event): boolean {
+    isRelevantSignal(type: string, event: Event): boolean {
+        return this.filterSignal(type);
+    }
+
+    isWakeupSignal(type: string, event: Event): boolean {
         return this.filterSignal(type);
     }
 }
@@ -90,30 +126,35 @@ export abstract class TickingNode<
     T extends NodeState = NodeState,
     P extends NodeRouter = NodeRouter
 > extends BaseNode<T, P> {
+    private timeoutValue = Infinity;
+
+    constructor(name: string) {
+        super(name);
+        this.addCondition(this.checkTimeout);
+    }
+
+    timeout(time: number): this {
+        this.timeoutValue = time;
+        return this;
+    }
 
     onEnter(head: HeadPointer): void {
         this.setMetadata(head, new NodeState(performance.now()) as T);
     }
 
-    onTick(event: TickEvent, head: HeadPointer): NodePort | null {
-        const state = head.data[this.name];
-        if (!state) {
-            return null;
-        }
-        
-        state.newTimestamp(event.timeStamp);
-        return this.checkConditions(state as T);
+    abstract tick(event: TickEvent, head: HeadPointer): void;
+    onTick(event: TickEvent, head: HeadPointer) {
+        const state = this.getMetadata(head);
+        state.newTimestamp(event.detail.timestamp);
+        this.tick(event, head);
+        return this.evaluateConditions(state);
     }
 
-    checkConditions(state: T): NodePort | null {
+    private checkTimeout(state: T) {
         if (state.normalizedTime >= this.timeoutValue) {
             return this.ports.fail;
         }
 
-        return this.checkLocalConditions(state);
-    }
-
-    protected checkLocalConditions(state: T): NodePort | null {
         return null;
     }
 }

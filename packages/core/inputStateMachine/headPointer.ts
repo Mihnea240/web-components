@@ -15,7 +15,7 @@ export class HeadPointer {
     ) {
     }
 
-    private emitTransitionEvent(fromState: string, toState: string) {
+    public emitTransitionEvent(fromState: string, toState: string) {
         this.stateManager.handleTransitionEvent(
             `${this.stateMachine.name}:${fromState}->${toState}` as TransitionEventType,
             this,
@@ -31,18 +31,11 @@ export class HeadPointer {
         const fromState = lastState ?? currentNode.name;
         const newState = port.targetNode;
 
-        if (newState === "IDLE") {
+        if (newState === "IDLE" || newState === "SUCCESS") {
             currentNode.onExit(this);
             this.previousNode = currentNode;
             this.emitTransitionEvent(fromState, newState);
-            return "IDLE";
-        }
-
-        if (newState === "SUCCESS") {
-            currentNode.onExit(this);
-            this.previousNode = currentNode;
-            this.emitTransitionEvent(fromState, newState);
-            return "IDLE";
+            return newState;
         }
 
         if (newState === fromState) {
@@ -60,7 +53,6 @@ export class HeadPointer {
             return null;
         }
 
-        // Exit current node, then enter new node
         const oldNode = currentNode;
         oldNode.onExit(this);
         this.previousNode = oldNode;
@@ -73,35 +65,30 @@ export class HeadPointer {
     sendSignal(type: string, event: Event) {
         let transitions = 0;
 
-        while (this.activeNode && transitions < this.maxNodeTransitions) {
+        if (this.activeNode && transitions < this.maxNodeTransitions) {
             const node = this.activeNode;
-            if (!node.filterSignal(type)) {
-                break;
-            }
-            
             const nextPort = node.onSignal(type, event, this);
+
             if (!nextPort) {
-                break;
+                return null;
             }
 
             const result = this.transitionTo(nextPort, event, node.name);
             transitions++;
 
             if (result === "IDLE") return "IDLE";
-            if (!result) break; // invalid transition or explicit stop
-            if (result === node.name) break; // self-transition: reset but stop composing
-            // continue loop so new active node can consume same signal
+            if (!result) return null; // invalid transition or explicit stop
+            if (result === node.name) return null; // self-transition: reset but stop composing
         }
 
         return null;
     }
 
-    // Direct tick path for active heads to avoid wake-up side effects from signal routing.
     tick(event: TickEvent) {
         if (!this.activeNode || !(this.activeNode instanceof TickingNode)) {
             return null;
         }
-        console.log(this.data);
+        
         const port = this.activeNode.onTick(event, this);
         if (!port) {
             return null;

@@ -4,26 +4,36 @@ import type { TickEvent } from "./signalProvider";
 import type { StateManager } from "./stateManager";
 
 class ComposedNodeState extends NodeState {
-    public data: Record<string, any> = {};
+    public data: Map<string, boolean> = new Map();
+    public started = false;
+    public trueCount = 0;
+    public falseCount = 0;
     constructor(startTime: number) {
         super(startTime);
     }
 }
 
-export class ComposedNode extends TickingNode<ComposedNodeState> {
+export class GateNode extends TickingNode<ComposedNodeState> {
+
     constructor(name: string, public stateManager: StateManager) {
         super(name);
 
-        stateManager.addTransitionListener("ALL", (head, eventType) => {
-            if (eventType.endsWith("SUCCESS")) {
-                const state = this.getMetadata(head);
-                if (!state) {
-                    return;
-                }
+        stateManager.addTransitionListener("ALL", this.transitionListener.bind(this));
+        this.addCondition(this.checkConditions.bind(this));
+    }
 
-                state.data[head.activeNode!.name] = head.data[head.activeNode!.name];
-            }
-        });
+
+    override isWakeupSignal(type: string, event: Event): boolean {
+        const wakeupMachine = this.stateManager.isWakeUpSignal(type, event);
+        return wakeupMachine?.root?.isRelevantSignal(type, event) ?? false;
+    }
+
+    /**
+     * Only process signals that are relevant to any root node in the stateManager's state machines.
+     */
+    override isRelevantSignal(type: string, event: Event): boolean {
+        // return this.stateManager.getHeads().some(head => head.activeNode?.isRelevantSignal(type, event) ?? false);
+        return true;
     }
 
 
@@ -32,34 +42,48 @@ export class ComposedNode extends TickingNode<ComposedNodeState> {
     }
 
     onExit(head: HeadPointer): void {
-        
-    } 
 
-    handleSignal(type: string, event: Event, head: HeadPointer): NodePort | null {
-        this.stateManager.emitSignal(type, event);
-        const state = this.getMetadata(head);
-        if (!state) {
-            return null;
-        }
-
-        return this.checkLocalConditions(state);
     }
 
-    onTick(event: TickEvent, head: HeadPointer): NodePort | null {
+    transitionListener(head: HeadPointer, eventType: string) {
+        console.log(`Transition event: ${eventType} for node ${this.name}`);
+        const [state_machine, from, to] = eventType.split(":->");
         const state = this.getMetadata(head);
-        if (!state) {
-            return null;
-        }
 
-        this.stateManager.tick(event);
-        return this.checkLocalConditions(state);
+        if (to === "SUCCESS") {
+            state.data.set(state_machine, true);
+            state.started = true;
+            state.trueCount++;
+        } else if (to === "IDLE") {
+            state.data.set(state_machine, false);
+            state.trueCount--;
+            state.falseCount++;
+        }
     }
 
-    protected checkLocalConditions(state: ComposedNodeState): NodePort | null {
-        const heads = this.stateManager.getHeads();
-        
+    checkConditions(state: ComposedNodeState): NodePort | null {
+        if (!state.started) {
+            return null;
+        }
+        if(state.trueCount === state.data.size) {
+            return this.ports.success;
+        }
+
+        if(state.trueCount < state.data.size || state.falseCount > 0) {
+            return this.ports.fail;
+        }
+
         return null;
     }
 
+    override handleSignal(type: string, event: Event, head: HeadPointer): boolean {
+        this.stateManager.emitSignal(type, event);
+
+        return true;
+    }
+
+    override tick(event: TickEvent, head: HeadPointer): void {
+        this.stateManager.tick(event);
+    }
 
 }

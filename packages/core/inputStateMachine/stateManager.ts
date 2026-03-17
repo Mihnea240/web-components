@@ -7,7 +7,7 @@ export type TransitionEventType = `${string}:${string}->${string}`;
 export type TransitionHandler = (head: HeadPointer, eventType: TransitionEventType) => void;
 
 export class StateManager {
-    private stateMachines = new Map<string, StateMachine>();
+    public readonly stateMachines = new Map<string, StateMachine>();
     private heads = new Set<HeadPointer>();
     private transitionCallbacks = new Map<
         TransitionEventType | "ALL",
@@ -27,6 +27,8 @@ export class StateManager {
 
         this.heads.add(head);
         machine.toggleLock(true);
+
+        head.emitTransitionEvent("IDLE", head.activeNode.name);
         return head;
     }
 
@@ -44,7 +46,7 @@ export class StateManager {
     }
 
     private handleNewState(head: HeadPointer, newState: string | null) {
-        if (newState === "IDLE") {
+        if (newState === "IDLE" || newState === "SUCCESS") {
             this.removeHeadPointer(head);
         }
     }
@@ -102,7 +104,12 @@ export class StateManager {
         this.wakeStateMachines(type, event);
 
         for (const head of this.heads.values()) {
-            this.handleNewState(head, head.sendSignal(type, event));
+            const result = head.sendSignal(type, event)
+            this.handleNewState(head, result);
         }
+    }
+
+    isWakeUpSignal(type: string, event: Event): StateMachine | null {
+        return this.stateMachines.values().find(machine => machine.isWakeupSignal(type, event)) ?? null;
     }
 }
