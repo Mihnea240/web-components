@@ -9,16 +9,14 @@ const signalProvider = new SignalProvider(stateManager);
 
 // --- GateNode Demo ---
 // Two simple key nodes as sub-machines
-const gateStateManager = new StateManager();
-const keyA = new KeyNode("key-a", "a").press().timeout(2000).strict();
-const keyB = new KeyNode("key-b", "b").press().timeout(2000).strict();
+
+const keyA = new KeyNode("key-a", "a").release();
+const keyB = new KeyNode("key-b", "b").release();
 
 const smA = new StateMachine("smA").addNode(keyA).rootNode(keyA);
 const smB = new StateMachine("smB").addNode(keyB).rootNode(keyB);
-gateStateManager.addStateMachine(smA);
-gateStateManager.addStateMachine(smB);
 
-const gateNode = new GateNode("gate", gateStateManager);
+export const gateNode = new GateNode("gate", [smA, smB]);
 
 // Add the gate node to a new state machine and register it with the main state manager
 const gateMachine = new StateMachine("gate-machine").addNode(gateNode).rootNode(gateNode);
@@ -36,6 +34,9 @@ function setGateStatus(msg, color = "#fff") {
 		gateStatus.style.color = color;
 	}
 }
+
+// Listen for transitions in the GateNode's internal state manager
+
 
 // --- Demo UI setup ---
 const statusDiv = document.createElement("div");

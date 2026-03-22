@@ -12,10 +12,10 @@ class KeyNodeState extends NodeState {
 
     constructor(startTime: number) {
         super(startTime);
-        this.clear();
+        this.clean();
     }
 
-    clear() {
+    clean() {
         this.pressCount = 0;
         this.heldTime = 0;
         this.lastPressTime = 0;
@@ -138,12 +138,12 @@ export class KeyNode extends TickingNode<KeyNodeState> {
         this.setMetadata(head, new KeyNodeState(performance.now()));
     }
 
-    override onExit(head: HeadPointer) {
-        this.getMetadata(head)?.clear();
-    }
+    override isRelevantSignal(type: string, event: KeyboardEvent): boolean {
+        if (event.repeat) {
+            return false;
+        }
 
-    override isRelevantSignal(type: string, event: Event): boolean {
-        const valid = this.isKeyMine(event as KeyboardEvent);
+        const valid = this.isKeyMine(event);
 
         if (type === "keydown" && this.strictMode) {
             return valid;
@@ -152,8 +152,25 @@ export class KeyNode extends TickingNode<KeyNodeState> {
         return true;
     }
 
-    override isWakeupSignal(type: string, event: Event): boolean {
+    override isWakeupSignal(type: string, event: KeyboardEvent): boolean {
+        if (event.repeat) {
+            return false;
+        }
+
+        if (type !== "keydown") {
+            return false;
+        }
         return this.isKeyMine(event as KeyboardEvent);
+    }
+
+    isActiveState(head: HeadPointer): boolean {
+        const state = this.getMetadata(head);
+
+        if(!state.isDown) {
+            return false;
+        }
+
+        return (state.pressCount === this.requieredPressCount && state.heldTime >= this.requieredHoldTime);
     }
 
     override handleSignal(type: string, event: KeyboardEvent, head: HeadPointer, data?: any) {

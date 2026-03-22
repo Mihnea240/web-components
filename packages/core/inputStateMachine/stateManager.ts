@@ -14,10 +14,11 @@ export class StateManager {
         Array<TransitionHandler>
     >();
 
+    private lockedMachines = new Set<string>();
+
     private createHeadPointer(stateMachineName: string): HeadPointer | null {
         const machine = this.getStateMachine(stateMachineName);
         if (!machine) {
-            console.debug(`State machine "${stateMachineName}" not found.`);
             return null;
         }
 
@@ -26,7 +27,7 @@ export class StateManager {
         head.activeNode?.onEnter(head);
 
         this.heads.add(head);
-        machine.toggleLock(true);
+        this.lockedMachines.add(stateMachineName);
 
         head.emitTransitionEvent("IDLE", head.activeNode.name);
         return head;
@@ -34,12 +35,13 @@ export class StateManager {
 
     private removeHeadPointer(head: HeadPointer) {
         this.heads.delete(head);
-        head.stateMachine.toggleLock(false);
+        this.lockedMachines.delete(head.stateMachine.name);
     }
 
     private wakeStateMachines(type: string, event: Event) {
         for (const stateMachine of this.stateMachines.values()) {
-            if (stateMachine.locked || !stateMachine.isWakeupSignal(type, event)) continue;
+            if (!stateMachine.isWakeupSignal(type, event)) continue;
+            if (this.lockedMachines.has(stateMachine.name)) continue;
 
             this.createHeadPointer(stateMachine.name);
         }
@@ -109,7 +111,16 @@ export class StateManager {
         }
     }
 
-    isWakeUpSignal(type: string, event: Event): StateMachine | null {
+    isWakeupSignal(type: string, event: Event): StateMachine | null {
         return this.stateMachines.values().find(machine => machine.isWakeupSignal(type, event)) ?? null;
+    }
+
+    abort(stateMachineName: string | null = null) {
+        if (!stateMachineName) {
+            this.heads.values().forEach(head => head.abort());
+            return;
+        }
+
+        this.heads.values().find(head => head.stateMachine?.name === stateMachineName)?.abort();
     }
 }

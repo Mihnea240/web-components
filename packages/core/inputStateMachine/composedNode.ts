@@ -1,89 +1,137 @@
-import { NodeState, TickingNode, type NodePort } from "./baseNode";
+import { NodeState, TickingNode } from "./baseNode";
 import type { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
-import type { StateManager } from "./stateManager";
+import { StateMachine } from "./stateMachine";
+import { StateManager } from "./stateManager";
 
 class ComposedNodeState extends NodeState {
-    public data: Map<string, boolean> = new Map();
+    public data: Map<string, number> = new Map();
     public started = false;
-    public trueCount = 0;
-    public falseCount = 0;
-    constructor(startTime: number) {
+    public stateManager: StateManager;
+
+    constructor(startTime: number, stateMachines?: StateMachine[]) {
         super(startTime);
+
+        this.stateManager = new StateManager();
+        for (const sm of stateMachines ?? []) {
+            this.stateManager.addStateMachine(sm);
+        }
+
+        this.stateManager.addTransitionListener("ALL", (head, eventType) => {
+            const [machineName, fromNode, toNode] = eventType.split(":->");
+            console.log(`Internal transition ${eventType}`);
+
+            if (this.started && this.data.has(machineName)) {
+                //Invalidate on machine reawake
+            }
+
+            if (toNode === "SUCCESS") {
+                this.data.set(machineName, head[fromNode].exitTime);
+                this.started = true;
+            }
+        });
+    }
+
+    clean() {
+        this.data.clear();
+        this.started = false;
     }
 }
 
 export class GateNode extends TickingNode<ComposedNodeState> {
+    private burstTimeout = 0;
 
-    constructor(name: string, public stateManager: StateManager) {
+    constructor(name: string, public stateMachines: StateMachine[]) {
         super(name);
 
-        stateManager.addTransitionListener("ALL", this.transitionListener.bind(this));
         this.addCondition(this.checkConditions.bind(this));
     }
 
-
-    override isWakeupSignal(type: string, event: Event): boolean {
-        const wakeupMachine = this.stateManager.isWakeUpSignal(type, event);
-        return wakeupMachine?.root?.isRelevantSignal(type, event) ?? false;
+    timeWindow(ms: number): this {
+        this.burstTimeout = ms;
+        return this;
     }
 
-    /**
-     * Only process signals that are relevant to any root node in the stateManager's state machines.
-     */
+    override isWakeupSignal(type: string, event: Event): boolean {
+        for (const sm of this.stateMachines) {
+            if (sm.isWakeupSignal(type, event)) {
+                return sm.root?.isWakeupSignal(type, event) ?? false;
+            }
+        }
+
+        return false;
+    }
+
     override isRelevantSignal(type: string, event: Event): boolean {
-        // return this.stateManager.getHeads().some(head => head.activeNode?.isRelevantSignal(type, event) ?? false);
         return true;
     }
 
 
     onEnter(head: HeadPointer) {
-        this.setMetadata(head, new ComposedNodeState(performance.now()));
+        this.setMetadata(head, new ComposedNodeState(performance.now(), this.stateMachines));
     }
 
     onExit(head: HeadPointer): void {
-
+        super.onExit(head);
     }
 
-    transitionListener(head: HeadPointer, eventType: string) {
-        console.log(`Transition event: ${eventType} for node ${this.name}`);
-        const [state_machine, from, to] = eventType.split(":->");
-        const state = this.getMetadata(head);
+    checkConditions(state: ComposedNodeState) {
+        const stateMachines = this.stateMachines;
+        const heads = state.stateManager.getHeads();
 
-        if (to === "SUCCESS") {
-            state.data.set(state_machine, true);
-            state.started = true;
-            state.trueCount++;
-        } else if (to === "IDLE") {
-            state.data.set(state_machine, false);
-            state.trueCount--;
-            state.falseCount++;
+        for (const head of heads) {
+            const { activeNode, stateMachine } = head;
+            const machineName = stateMachine.name;
+
+            if (!activeNode) {
+                continue;
+            }
+            const active = activeNode.isActiveState(head);
+            
+            if (!active && state.data.has(machineName) && state.currentTime - state.data.get(machineName)! > this.burstTimeout) {
+                state.stateManager.abort();
+                return this.ports.fail;
+            }
+
+            if (active) {
+                state.started = true;
+                state.data.set(head.stateMachine.name, activeNode.getMetadata(head).currentTime);
+            }
         }
-    }
 
-    checkConditions(state: ComposedNodeState): NodePort | null {
         if (!state.started) {
             return null;
         }
-        if(state.trueCount === state.data.size) {
-            return this.ports.success;
+
+        let count = 0;
+        for (const [machineName, time] of state.data) {
+            if (state.currentTime - time > this.burstTimeout) {
+                state.stateManager.abort();
+                return this.ports.fail;
+            }
+
+            count++;
         }
 
-        if(state.trueCount < state.data.size || state.falseCount > 0) {
-            return this.ports.fail;
+        if (count === stateMachines.length) {
+            state.stateManager.abort();
+            return this.ports.success;
         }
 
         return null;
     }
 
     override handleSignal(type: string, event: Event, head: HeadPointer): boolean {
-        this.stateManager.emitSignal(type, event);
-
+        this.getMetadata(head).stateManager.emitSignal(type, event);
         return true;
     }
 
     override tick(event: TickEvent, head: HeadPointer): void {
-        this.stateManager.tick(event);
+        this.getMetadata(head).stateManager.tick(event);
+    }
+
+    override isActiveState(head: HeadPointer): boolean {
+        throw new Error("Method not implemented.");
     }
 
 }

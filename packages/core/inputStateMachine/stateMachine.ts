@@ -3,13 +3,18 @@ import { TickingNode, type BaseNode } from "./baseNode";
 export class StateMachine {
     private nodes = new Map<string, BaseNode<any, any>>();
     public root!: BaseNode<any, any>;
-
-    public locked = false;
+    private _locked = false;
 
     constructor(public name: string) {
-
     }
 
+    get locked() {
+        return this._locked;
+    }
+
+    toggleLock(state: boolean) {
+        this._locked = state;
+    }
 
     rootNode(node: BaseNode<any, any>) {
         this.root = node;
@@ -36,10 +41,6 @@ export class StateMachine {
 
     hasTickingNodes(): boolean {
         return this.nodes.values().some(node => node instanceof TickingNode);
-    }
-
-    toggleLock(value: boolean = !this.locked) {
-        this.locked = value;
     }
 
     collectSignalTypes() {

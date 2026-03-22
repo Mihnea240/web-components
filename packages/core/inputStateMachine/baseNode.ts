@@ -12,14 +12,21 @@ export type NodeRouter = {
     [portName: string]: NodePort;
 }
 
-export class NodeState {
+export abstract class NodeState {
     public normalizedTime = 0;
+    public currentTime = 0;
+    public exitTime = 0;
+
     constructor(public startTime = 0) {
+        this.currentTime = startTime;
     }
 
     newTimestamp(timeStamp: number) {
+        this.currentTime = timeStamp;
         this.normalizedTime = timeStamp - this.startTime;
     }
+
+    abstract clean(): void;
 }
 
 const defaultPorts: NodeRouter = {
@@ -31,13 +38,16 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
     static observedSignals: string[] = [];
 
     public ports: P = defaultPorts as any;
-    private conditions: Array<(state: T) => NodePort | null> = [];
     public strictMode = false;
+
+    private conditions: Array<(state: T) => NodePort | null> = [];
+    private filteredSignals = new Set<string>();
+    
     constructor(public name: string) {
     }
 
     setPorts(ports: Partial<P>): this {
-        this.ports = {...this.ports, ...ports};
+        this.ports = { ...this.ports, ...ports };
         return this;
     }
 
@@ -49,6 +59,7 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
     abstract handleSignal(type: string, event: Event, head: HeadPointer): boolean;
     abstract onExit(head: HeadPointer): void;
     abstract onEnter(head: HeadPointer): void;
+    abstract isActiveState(head: HeadPointer): boolean;
 
     onSignal(type: string, event: Event, head: HeadPointer): NodePort | null {
         const mySignal = this.filterSignal(type);
@@ -86,6 +97,23 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
         return this;
     }
 
+    addFilteredSignal(...signalType: string[]): this {
+        for (const signal of signalType) 
+            this.filteredSignals.add(signal);
+        return this;
+    }
+
+    removeFilteredSignal(...signalType: string[]): this {
+        for (const signal of signalType)
+            this.filteredSignals.delete(signal);
+        return this;
+    }
+
+    clearFilteredSignals(): this {
+        this.filteredSignals.clear();
+        return this;
+    }
+
     evaluateConditions(state: T): NodePort | null {
         let result: any = null;
         for (const condition of this.conditions) {
@@ -99,18 +127,7 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
     }
 
     filterSignal(type: string): boolean {
-        let found = false;
-        for (let klass = this.constructor as typeof BaseNode; klass !== BaseNode; klass = Object.getPrototypeOf(klass) as typeof BaseNode) {
-            if(!klass.observedSignals || klass.observedSignals.length === 0) {
-                continue;
-            }
-            found = true;
-            if (klass.observedSignals.includes(type)) {
-                return true;
-            }
-        }
-
-        return !found; // If no observedSignals defined in the hierarchy, consider all signals relevant
+        return !this.filteredSignals.has(type);
     }
 
     isRelevantSignal(type: string, event: Event): boolean {
@@ -119,6 +136,16 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
 
     isWakeupSignal(type: string, event: Event): boolean {
         return this.filterSignal(type);
+    }
+
+    isTerminalNode(): boolean {
+        const ports = this.ports;
+        for (const portKey in ports) {
+            if (ports[portKey].targetNode === "SUCCESS") {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
@@ -130,7 +157,7 @@ export abstract class TickingNode<
 
     constructor(name: string) {
         super(name);
-        this.addCondition(this.checkTimeout);
+        this.addCondition(this.checkTimeout.bind(this));
     }
 
     timeout(time: number): this {
@@ -138,8 +165,10 @@ export abstract class TickingNode<
         return this;
     }
 
-    onEnter(head: HeadPointer): void {
-        this.setMetadata(head, new NodeState(performance.now()) as T);
+    onExit(head: HeadPointer): void {
+        const state = this.getMetadata(head);
+        state.exitTime = performance.now();
+        state.clean();
     }
 
     abstract tick(event: TickEvent, head: HeadPointer): void;

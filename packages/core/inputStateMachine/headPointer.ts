@@ -76,7 +76,7 @@ export class HeadPointer {
             const result = this.transitionTo(nextPort, event, node.name);
             transitions++;
 
-            if (result === "IDLE") return "IDLE";
+            if (result === "IDLE" || result === "SUCCESS") return "IDLE";
             if (!result) return null; // invalid transition or explicit stop
             if (result === node.name) return null; // self-transition: reset but stop composing
         }
@@ -94,5 +94,15 @@ export class HeadPointer {
             return null;
         }
         return this.transitionTo(port, event, this.activeNode.name);
+    }
+
+    abort() {
+        if (!this.activeNode) {
+            return;
+        }
+        this.activeNode.onExit(this);
+        const fromState = this.activeNode.name;
+        this.activeNode = null;
+        this.emitTransitionEvent(fromState, "IDLE");
     }
 }
