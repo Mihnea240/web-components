@@ -1,4 +1,4 @@
-import { NodeState, TickingNode } from "./baseNode";
+import { NodeState, TickingNode, type TickingNodeConfig } from "./baseNode";
 import type { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
 import { StateMachine } from "./stateMachine";
@@ -7,6 +7,7 @@ import { StateManager } from "./stateManager";
 class ComposedNodeState extends NodeState {
     public data: Map<string, number> = new Map();
     public started = false;
+    public failureReason = "";
     public stateManager: StateManager;
 
     constructor(startTime: number, stateMachines?: StateMachine[]) {
@@ -29,22 +30,33 @@ class ComposedNodeState extends NodeState {
                 this.data.set(machineName, head[fromNode].exitTime);
                 this.started = true;
             }
+
+            if (toNode === "IDLE" && this.started && !this.data.has(machineName)) {
+                this.failureReason = `Sub-machine ${machineName} failed before success`;
+            }
         });
     }
 
     clean() {
         this.data.clear();
         this.started = false;
+        this.failureReason = "";
     }
 }
 
 export class GateNode extends TickingNode<ComposedNodeState> {
     private burstTimeout = 0;
+    public stateMachines: StateMachine[];
 
-    constructor(name: string, public stateMachines: StateMachine[]) {
-        super(name);
+    constructor(stateMachines: StateMachine[], config: TickingNodeConfig = {}) {
+        super(config);
+        this.stateMachines = stateMachines;
 
         this.addCondition(this.checkConditions.bind(this));
+    }
+
+    protected override defaultName(): string {
+        return this.stateMachines.map(sm => sm.name).join(" & ");
     }
 
     timeWindow(ms: number): this {
@@ -75,9 +87,17 @@ export class GateNode extends TickingNode<ComposedNodeState> {
         super.onExit(head);
     }
 
-    checkConditions(state: ComposedNodeState) {
+    private checkConditions(state: ComposedNodeState) {
         const stateMachines = this.stateMachines;
         const heads = state.stateManager.getHeads();
+
+        // Fail immediately if a sub-machine failed before success
+        if (state.failureReason) {
+            console.warn(`GateNode failed: ${state.failureReason}`);
+            state.stateManager.abort();
+            state.failureReason = "";
+            return this.ports.fail;
+        }
 
         for (const head of heads) {
             const { activeNode, stateMachine } = head;

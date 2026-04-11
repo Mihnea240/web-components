@@ -1,170 +1,207 @@
 import { GateNode } from "@core/inputStateMachine/composedNode";
-import { KeyNode } from "@core/inputStateMachine/keyNodes";
+import { HoldNode, KeyNode, MultipleTapNode, TapNode } from "@core/inputStateMachine/keys";
+import { PointerHoldNode, PointerMultipleTapNode, PointerTapNode } from "@core/inputStateMachine/pointer";
 import { SignalProvider } from "@core/inputStateMachine/signalProvider";
 import { StateMachine } from "@core/inputStateMachine/stateMachine";
-import { StateManager } from "../../packages/core/inputStateMachine/stateManager";
+import { StateManager } from "@core/inputStateMachine/stateManager";
+
+type GestureFactory = () => {
+	machine: StateMachine;
+	onSuccess: (data: unknown) => void;
+};
+
+type ShortcutHelp = {
+	id: string;
+	gesture: string;
+	description: string;
+};
+
+const shortcutHelpRows: ShortcutHelp[] = [
+	{ id: "KVTT", gesture: "K, V, T, T", description: "Runs a strict key sequence." },
+	{ id: "A_AND_B", gesture: "A + B (within 2s)", description: "Gate succeeds when both keys are pressed in the time window." },
+	{ id: "HOLD_H_2S", gesture: "Hold H for 2s, then release", description: "Release-triggered keyboard hold." },
+	{ id: "DOUBLE_TAP_D", gesture: "D twice quickly", description: "Detects a fast double tap." },
+	{ id: "CHORD_CTRL_SHIFT_K", gesture: "Ctrl+Shift+K", description: "Chord-based keyboard shortcut." },
+	{ id: "FAST_V_T", gesture: "V then T in under 200ms each", description: "Very tight timing sequence." },
+	{ id: "SEQUENCE_INTO_GATE", gesture: "Q then (A + B)", description: "Sequence that ends in a gate condition." },
+	{ id: "POINTER_DOUBLE_CLICK", gesture: "Left mouse double click", description: "Pointer double-click gesture." },
+	{ id: "POINTER_HOLD_1S", gesture: "Hold left mouse 1s, then release", description: "Release-triggered pointer hold." },
+	{ id: "POINTER_CHORD_HOLD", gesture: "Hold left+right mouse 300ms, then release", description: "Pointer chord hold on release." },
+	{ id: "SHIFT_LEFT_CLICK", gesture: "Hold Shift + left click (quick window)", description: "Held modifier + click combo via GateNode." },
+	{ id: "ALT_RIGHT_CLICK", gesture: "Hold Alt + right click (quick window)", description: "Held modifier + right click combo." },
+	{ id: "CTRL_DOUBLE_CLICK", gesture: "Hold Ctrl + left double click (quick window)", description: "Held modifier plus multi-click combo." },
+];
+
+const ShortcutRegistry: Record<string, GestureFactory> = {
+	KVTT: () => {
+		return {
+			machine: new StateMachine("KVTT")
+				.addNode(new TapNode("k", { timeout: 1200, strict: true }), { success: "v" })
+				.addNode(new TapNode("v", { timeout: 1200, strict: true }), { success: "t1" })
+				.addNode(new TapNode("t", { name: "t1", timeout: 1200, strict: true }), { success: "t2" })
+				.addNode(new TapNode("t", { name: "t2", timeout: 1200, strict: true })),
+			onSuccess: () => console.warn(">>> KVTT SEQUENCE EXECUTED"),
+		};
+	},
+
+	A_AND_B: () => {
+		return {
+			machine: new StateMachine("A+B").addNode(
+				new GateNode([
+					new StateMachine("A").addNode(new TapNode("a", { strict: true })),
+					new StateMachine("B").addNode(new TapNode("b", { strict: true })),
+				]).timeWindow(2000)
+			),
+			onSuccess: (data) => console.warn(">>> GATE OPENED", data),
+		};
+	},
+
+	HOLD_H_2S: () => {
+		return {
+			machine: new StateMachine("Hold_H").addNode(
+				new HoldNode("h", 2000, { name: "hold-h", timeout: 3000, triggerOnPress: false })
+			),
+			onSuccess: () => console.warn(">>> H HELD FOR 2 SECONDS (TRIGGERED ON RELEASE)"),
+		};
+	},
+
+	DOUBLE_TAP_D: () => {
+		return {
+			machine: new StateMachine("Double_D").addNode(new MultipleTapNode("d", 2, { name: "double-d", timeout: 500 })),
+			onSuccess: () => console.warn(">>> DOUBLE TAP D DETECTED"),
+		};
+	},
+
+	CHORD_CTRL_SHIFT_K: () => {
+		return {
+			machine: new StateMachine("Chord_K").addNode(new KeyNode("ctrl+shift+k", { name: "chord-k", triggerOnPress: false, timeout: 1000 })),
+			onSuccess: () => console.warn(">>> CTRL+SHIFT+K CHORD DETECTED"),
+		};
+	},
+
+	FAST_V_T: () => {
+		return {
+			machine: new StateMachine("Fast_VT")
+				.addNode(new TapNode("v", { name: "v-fast", strict: true, timeout: 200 }), { success: "t-fast" })
+				.addNode(new TapNode("t", { name: "t-fast", strict: true, timeout: 200 })),
+			onSuccess: () => console.warn(">>> FAST V->T SUCCESS (Pro Speed)"),
+		};
+	},
+
+	SEQUENCE_INTO_GATE: () => {
+		return {
+			machine: new StateMachine("Q_THEN_AB")
+				.addNode(new TapNode("q", { name: "start-q", timeout: 1000 }), { success: "gate_ab" })
+				.addNode(
+					new GateNode([
+						new StateMachine("Seq->Gate_A").addNode(new TapNode("a", { strict: true })),
+						new StateMachine("Seq->Gate_B").addNode(new TapNode("b", { strict: true })),
+					]).timeWindow(1000)
+				),
+			onSuccess: () => console.warn(">>> COMBO: Q followed by A+B Gate!"),
+		};
+	},
+
+	POINTER_DOUBLE_CLICK: () => {
+		return {
+			machine: new StateMachine("Pointer_Double_Click").addNode(
+				new PointerMultipleTapNode(2, { name: "double-click", pointerType: "mouse", buttons: [0], timeout: 600 })
+			),
+			onSuccess: () => console.warn(">>> POINTER DOUBLE CLICK DETECTED"),
+		};
+	},
+
+	POINTER_HOLD_1S: () => {
+		return {
+			machine: new StateMachine("Pointer_Hold_1s").addNode(
+				new PointerHoldNode(1000, { name: "hold-primary", pointerType: "mouse", buttons: [0], timeout: 1500, triggerOnDown: false })
+			),
+			onSuccess: () => console.warn(">>> POINTER HELD FOR 1 SECOND (TRIGGERED ON RELEASE)"),
+		};
+	},
+
+	POINTER_CHORD_HOLD: () => {
+		return {
+			machine: new StateMachine("Pointer_Chord_Hold").addNode(
+				new PointerHoldNode(300, {
+					name: "hold-left-right",
+					pointerType: "mouse",
+					buttons: [0, 2],
+					buttonMode: "all",
+					timeout: 1200,
+					triggerOnDown: false,
+				})
+			),
+			onSuccess: () => console.warn(">>> POINTER LEFT+RIGHT CHORD HOLD (TRIGGERED ON RELEASE)"),
+		};
+	},
+
+	SHIFT_LEFT_CLICK: () => {
+		return {
+			machine: new StateMachine("Shift_Left_Click").addNode(
+				new GateNode([
+					new StateMachine("ShiftDown").addNode(new KeyNode("shift", { name: "shift-down", triggerOnPress: false, timeout: 4000 })),
+					new StateMachine("LeftClick").addNode(new PointerTapNode({ name: "left-click", pointerType: "mouse", buttons: [0], timeout: 2000 })),
+				]).timeWindow(350)
+			),
+			onSuccess: () => console.warn(">>> SHIFT + LEFT CLICK COMBO"),
+		};
+	},
+
+	ALT_RIGHT_CLICK: () => {
+		return {
+			machine: new StateMachine("Alt_Right_Click").addNode(
+				new GateNode([
+					new StateMachine("AltDown").addNode(new KeyNode("alt", { name: "alt-down", triggerOnPress: false, timeout: 4000 })),
+					new StateMachine("RightClick").addNode(new PointerTapNode({ name: "right-click", pointerType: "mouse", buttons: [2], timeout: 2000 })),
+				]).timeWindow(350)
+			),
+			onSuccess: () => console.warn(">>> ALT + RIGHT CLICK COMBO"),
+		};
+	},
+
+	CTRL_DOUBLE_CLICK: () => {
+		return {
+			machine: new StateMachine("Ctrl_Double_Click").addNode(
+				new GateNode([
+					new StateMachine("CtrlDown").addNode(new KeyNode("ctrl", { name: "ctrl-down", triggerOnPress: false, timeout: 5000 })),
+					new StateMachine("DoubleClick").addNode(new PointerMultipleTapNode(2, { name: "double-click-left", pointerType: "mouse", buttons: [0], timeout: 2500 })),
+				]).timeWindow(700)
+			),
+			onSuccess: () => console.warn(">>> CTRL + DOUBLE CLICK COMBO"),
+		};
+	},
+};
+
+function  renderShortcutsTable(rows: ShortcutHelp[]) {
+	const body = document.querySelector<HTMLTableSectionElement>("#shortcuts-table tbody");
+	if (!body) {
+		return;
+	}
+
+	body.innerHTML = rows
+		.map((row) => `<tr><td>${row.id}</td><td>${row.gesture}</td><td>${row.description}</td></tr>`)
+		.join("");
+}
 
 const stateManager = new StateManager();
 const signalProvider = new SignalProvider(stateManager);
+const successCallbacks = new Map<string, (data: unknown) => void>();
 
-// --- GateNode Demo ---
-// Two simple key nodes as sub-machines
+Object.entries(ShortcutRegistry).forEach(([, factory]) => {
+	const { machine, onSuccess } = factory();
+	stateManager.addStateMachine(machine);
+	successCallbacks.set(machine.name, onSuccess);
+});
 
-const keyA = new KeyNode("key-a", "a").release();
-const keyB = new KeyNode("key-b", "b").release();
-
-const smA = new StateMachine("smA").addNode(keyA).rootNode(keyA);
-const smB = new StateMachine("smB").addNode(keyB).rootNode(keyB);
-
-export const gateNode = new GateNode("gate", [smA, smB]);
-
-// Add the gate node to a new state machine and register it with the main state manager
-const gateMachine = new StateMachine("gate-machine").addNode(gateNode).rootNode(gateNode);
-stateManager.addStateMachine(gateMachine);
-
-// UI instructions
-const gateDiv = document.createElement("div");
-gateDiv.style.cssText = "font-family:monospace;padding:1em;margin:1em 0;background:#333;color:#fff;max-width:400px;";
-gateDiv.innerHTML = `<b>GateNode Demo</b><br>Press <kbd>a</kbd> and <kbd>b</kbd> (in any order, within 2s each) to succeed.<br><span id='gate-status'>Waiting for input...</span>`;
-document.body.appendChild(gateDiv);
-const gateStatus = document.getElementById("gate-status");
-function setGateStatus(msg, color = "#fff") {
-	if (gateStatus) {
-		gateStatus.textContent = msg;
-		gateStatus.style.color = color;
-	}
-}
-
-// Listen for transitions in the GateNode's internal state manager
-
-
-// --- Demo UI setup ---
-const statusDiv = document.createElement("div");
-statusDiv.style.cssText = "font-family:monospace;padding:1em;margin:1em 0;background:#222;color:#fff;max-width:400px;";
-statusDiv.innerHTML = `<b>Manual Shortcut Demo</b><br>Press: <kbd>k</kbd> <kbd>v</kbd> <kbd>t</kbd> <kbd>t</kbd><br><span id='shortcut-status'>Waiting for input...</span>`;
-document.body.prepend(statusDiv);
-const shortcutStatus = document.getElementById("shortcut-status")!;
-
-function setStatus(msg: string, color = "#fff") {
-	shortcutStatus.textContent = msg;
-	shortcutStatus.style.color = color;
-}
-
-
-function log(msg: string) {
-	setStatus(msg);
-	console.log(`[manual-state-machine] ${msg}`);
-}
-
-
-const machine = new StateMachine("manual-shortcut-k-v-t-t");
-const stepK = new KeyNode("step-k", "k")
-	.setPorts({
-		success: { targetNode: "step-v" },
-	})
-	.press()
-	.timeout(1200)
-	.strict(); // 1.2s timeout
-
-
-const stepV = new KeyNode("step-v", "v")
-	.setPorts({
-		success: { targetNode: "step-t-1" },
-	})
-	.strict()
-	.press()
-	.timeout(1200); // 1.2s timeout
-
-
-const stepT1 = new KeyNode("step-t-1", "t")
-	.setPorts({success: { targetNode: "step-t-2" }})
-	.press()
-	.strict()
-	.timeout(1200); // 1.2s timeout
-
-
-const stepT2 = new KeyNode("step-t-2", "t")
-	.setPorts({
-		success: { targetNode: "SUCCESS" },
-	})
-	.strict()
-	.release()
-	.timeout(1200); // 1.2s timeout
-
-machine.addNode(stepK, stepV, stepT1, stepT2).rootNode(stepK);
-
-
-stateManager.addStateMachine(machine);
-
-// Listen for transitions to update UI
 stateManager.addTransitionListener("ALL", (head, eventType) => {
-	console.log(`Transition event: ${eventType} (active node: ${head.activeNode?.name})`);
-	setStatus(`Current node: ${head.activeNode?.name || "None"} - Event: ${eventType}`, "#0f0");
+	console.log(`Transition Event: ${eventType} on machine ${head.stateMachine.name}`);
+	if (eventType.startsWith(`${head.stateMachine.name}:`) && eventType.endsWith("->SUCCESS")) {
+		successCallbacks.get(head.stateMachine.name)?.(head.data);
+	}
 });
 
 signalProvider.syncEventListeners();
+document.addEventListener("contextmenu", (event) => event.preventDefault());
 signalProvider.startTicking();
-
-window.addEventListener("beforeunload", () => {
-	signalProvider.stopTicking();
-});
-
-// --- Additional KeyNode demo examples ---
-
-// Double-press example (press 'd' twice quickly)
-const doubleD = new KeyNode("double-d", "d")
-	.press()
-	.pressCount(2)
-	.timeout(Infinity);
-
-// Hold example (hold 'h' for 1 second)
-const holdH = new KeyNode("hold-h", "h")
-	.press()
-	.requieredHeldTime(1000)
-	.timeout(2000);
-
-// Chord example (press 'ctrl+alt+k')
-const chordCtrlAltK = new KeyNode("chord-ctrl-alt-k", "ctrl+alt+k")
-	.press()
-	.timeout(2000);
-
-// --- Refactored: Each gesture is a separate StateMachine ---
-
-// Helper to register a gesture machine and status feedback
-function registerGestureMachine(machine: StateMachine, root: KeyNode, label: string, color: string) {
-	stateManager.addStateMachine(machine);
-	machine.rootNode(root);
-	stateManager.addTransitionListener("ALL", (head, eventType) => {
-		if (eventType.endsWith(`:${root.name}->IDLE`)) {
-			setStatus(label, color);
-			setTimeout(() => setStatus("Waiting for input...", "#fff"), 1200);
-		}
-	});
-}
-
-// Main shortcut sequence
-const machineMain = new StateMachine("manual-shortcut-k-v-t-t");
-machineMain.addNode(stepK, stepV, stepT1, stepT2);
-machineMain.rootNode(stepK);
-stateManager.addStateMachine(machineMain);
-
-// Double-press D
-const doubleDMachine = new StateMachine("double-d-machine");
-doubleDMachine.addNode(doubleD);
-registerGestureMachine(doubleDMachine, doubleD, "Double-press D detected!", "#0af");
-
-// Hold H
-const holdHMachine = new StateMachine("hold-h-machine");
-holdHMachine.addNode(holdH);
-registerGestureMachine(holdHMachine, holdH, "Held H for 1s!", "#fa0");
-
-// Chord Ctrl+Alt+K
-const chordCtrlAltKMachine = new StateMachine("chord-ctrl-alt-k-machine");
-chordCtrlAltKMachine.addNode(chordCtrlAltK);
-registerGestureMachine(chordCtrlAltKMachine, chordCtrlAltK, "Pressed Ctrl+Alt+K!", "#0ff");
-
-// Remove previous addNode for extra gestures from the main machine
-// (machine.addNode(doubleD, holdH, chordCtrlAltK);) // <-- now obsolete
-
-// Remove previous extra transition listener for extra gestures
-// (stateManager.addTransitionListener...) // <-- now obsolete
+renderShortcutsTable(shortcutHelpRows);

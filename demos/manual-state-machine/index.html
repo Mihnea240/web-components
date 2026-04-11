@@ -4,8 +4,74 @@
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 	<title>Manual State Machine Console Demo</title>
+	<style>
+		:root {
+			font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+			color: #111;
+			background: #f6f7f9;
+		}
+
+		body {
+			margin: 0;
+			padding: 24px;
+		}
+
+		h1 {
+			margin: 0 0 8px;
+			font-size: 1.4rem;
+		}
+
+		p {
+			margin: 0 0 16px;
+			color: #444;
+		}
+
+		.table-wrap {
+			overflow-x: auto;
+			background: #fff;
+			border: 1px solid #d8dbe2;
+			border-radius: 10px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			min-width: 680px;
+		}
+
+		th,
+		td {
+			text-align: left;
+			padding: 10px 12px;
+			border-bottom: 1px solid #eceef3;
+			vertical-align: top;
+		}
+
+		th {
+			background: #f0f2f7;
+			font-weight: 700;
+		}
+
+		tbody tr:nth-child(2n) {
+			background: #fafbfe;
+		}
+	</style>
 </head>
 <body>
+	<h1>Manual State Machine Shortcuts</h1>
+	<p>Run the gestures below and watch the console for transition and success logs.</p>
+	<div class="table-wrap">
+		<table id="shortcuts-table">
+			<thead>
+				<tr>
+					<th>Shortcut</th>
+					<th>Gesture</th>
+					<th>What it does</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
 	<script type="module" src="./main.ts"></script>
 </body>
 </html>

@@ -4,6 +4,9 @@ export const enterEvent = new CustomEvent("ENTER");
 export const exitEvent = new CustomEvent("EXIT");
 export type TickEvent = CustomEvent<{ timestamp: number, deltaTime: number }>;
 
+/**
+ * Bridges DOM events and requestAnimationFrame ticks into a StateManager.
+ */
 export class SignalProvider {
     private registeredSignalTypes = new Set<string>();
     private animationID: number | null = null;
@@ -16,12 +19,18 @@ export class SignalProvider {
         this.tick = this.tick.bind(this);
     }
 
+    /**
+     * Starts the RAF tick loop when not already running.
+     */
     startTicking() {
         if (this.animationID === null) {
             this.tick();
         }
     }
 
+    /**
+     * Stops the RAF tick loop if active.
+     */
     stopTicking() {
         if (this.animationID !== null) {
             cancelAnimationFrame(this.animationID);
@@ -29,11 +38,14 @@ export class SignalProvider {
         }
     }
 
+    /**
+     * Handles a DOM event by forwarding it as an input signal.
+     */
     handleEvent(ev: Event) {
         this.stateManager.emitSignal(ev.type, ev);
     }
 
-    tick() {
+    private tick() {
         const now = performance.now();
         const deltaTime = now - (this.tickEvent.detail.timestamp || now);
 
@@ -44,6 +56,9 @@ export class SignalProvider {
         this.animationID = requestAnimationFrame(this.tick);
     }
 
+    /**
+     * Syncs window listeners and ticking mode to current machine requirements.
+     */
     syncEventListeners(newEvents: Set<string> = this.stateManager.collectSignalTypes()) {
         const oldSignalTypes = this.registeredSignalTypes.difference(newEvents);
         this.registeredSignalTypes = newEvents;

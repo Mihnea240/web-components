@@ -6,7 +6,7 @@ import type { StateManager, TransitionEventType } from "./stateManager";
 export class HeadPointer {
     public activeNode: BaseNode | null = null;
     public previousNode: BaseNode | null = null;
-    public maxNodeTransitions = 32;
+    private maxNodeTransitions = 32;
     public data: Record<string, NodeState> = {};
 
     constructor(
@@ -15,6 +15,7 @@ export class HeadPointer {
     ) {
     }
 
+    /** @internal Emitted by engine lifecycle transitions only. */
     public emitTransitionEvent(fromState: string, toState: string) {
         this.stateManager.handleTransitionEvent(
             `${this.stateMachine.name}:${fromState}->${toState}` as TransitionEventType,

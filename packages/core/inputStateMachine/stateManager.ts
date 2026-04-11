@@ -6,8 +6,11 @@ import type { StateMachine } from "./stateMachine";
 export type TransitionEventType = `${string}:${string}->${string}`;
 export type TransitionHandler = (head: HeadPointer, eventType: TransitionEventType) => void;
 
+/**
+ * Runtime coordinator that owns machines, active heads, and transitions.
+ */
 export class StateManager {
-    public readonly stateMachines = new Map<string, StateMachine>();
+    private readonly stateMachines = new Map<string, StateMachine>();
     private heads = new Set<HeadPointer>();
     private transitionCallbacks = new Map<
         TransitionEventType | "ALL",
@@ -53,10 +56,16 @@ export class StateManager {
         }
     }
 
+    /**
+     * Subscribes to one transition or all transitions using "ALL".
+     */
     addTransitionListener(eventType: TransitionEventType | "ALL", callback: TransitionHandler) {
         getOrCompute(this.transitionCallbacks, eventType, () => []).push(callback);
     }
 
+    /**
+     * Removes a previously registered transition callback.
+     */
     removeTransitionCallbacks(eventType: TransitionEventType | "ALL", callback: TransitionHandler) {
         const callbacks = this.transitionCallbacks.get(eventType);
         if (!callbacks) return;
@@ -67,6 +76,9 @@ export class StateManager {
         }
     }
 
+    /**
+     * Dispatches a transition event to specific and global listeners.
+     */
     handleTransitionEvent(eventType: TransitionEventType, head: HeadPointer) {
         const callbacks = this.transitionCallbacks.get(eventType);
         const allCallbacks = this.transitionCallbacks.get("ALL");
@@ -75,33 +87,51 @@ export class StateManager {
         callbacks?.forEach(callback => callback(head, eventType));
     }
 
+    /**
+     * Returns the union of signal types required by all registered machines.
+     */
     collectSignalTypes() {
         return new Set(this.stateMachines.values().flatMap(machine => machine.collectSignalTypes()));
     }
 
+    /**
+     * Advances all active heads for one animation-frame tick.
+     */
     tick(event: TickEvent) {
         for (const head of this.heads.values()) {
             this.handleNewState(head, head.tick(event));
         }
     }
 
+    /**
+     * Registers a machine under its name.
+     */
     addStateMachine(machine: StateMachine) {
         this.stateMachines.set(machine.name, machine);
     }
 
-    getStateMachine(name: string): StateMachine | null {
+    private getStateMachine(name: string): StateMachine | null {
         return this.stateMachines.get(name) ?? null;
     }
 
+    /**
+     * Returns the currently active head iterator.
+     */
     getHeads() {
         return this.heads.values();
     }
 
+    /**
+     * Returns true when at least one registered machine needs ticking.
+     */
     hasTickingMachines(): boolean {
         return this.stateMachines.values().some(machine => machine.hasTickingNodes());
 
     }
 
+    /**
+     * Emits a DOM signal into the manager and advances awakened heads.
+     */
     emitSignal(type: string, event: Event) {
         this.wakeStateMachines(type, event);
 
@@ -111,10 +141,14 @@ export class StateManager {
         }
     }
 
+    /** @internal Engine helper; prefer machine-level checks from callers. */
     isWakeupSignal(type: string, event: Event): StateMachine | null {
         return this.stateMachines.values().find(machine => machine.isWakeupSignal(type, event)) ?? null;
     }
 
+    /**
+     * Aborts one machine or all machines, forcing active heads to IDLE.
+     */
     abort(stateMachineName: string | null = null) {
         if (!stateMachineName) {
             this.heads.values().forEach(head => head.abort());
