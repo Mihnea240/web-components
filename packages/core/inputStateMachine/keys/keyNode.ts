@@ -53,7 +53,6 @@ export class KeyNode extends TickingNode<KeyNodeState> {
         meta: 8,
     } as const;
 
-    private readonly chord: string;
     private readonly requiredModifierMask: number;
     private readonly requiredModifierKeys: Set<string>;
     private readonly requiredNonModifierKeys: Set<string>;
@@ -70,25 +69,19 @@ export class KeyNode extends TickingNode<KeyNodeState> {
         requieredPressCount: 1,
     } as const;
 
-    constructor(
-        chord: string,
-        config: KeyNodeConfig = {}
-    ) {
-        const options = { ...KeyNode.DEFAULT_KEY_NODE_OPTIONS, ...config };
+    constructor(private readonly chord: string, config: KeyNodeConfig = {}) {
         const {
             triggerOnPress,
             pressWindow,
             requieredHoldTime,
             requieredPressCount,
             ...baseConfig
-        } = options;
+        } = { ...KeyNode.DEFAULT_KEY_NODE_OPTIONS, ...config };
 
         super(baseConfig);
 
         this.chord = chord;
-        const parsedTokens = chord
-            .split("+")
-            .map(token => KeyNode.normalizeKeyToken(token));
+        const parsedTokens = chord.split("+").map(KeyNode.normalizeKeyToken);
 
         let modifierMask = 0;
         const modifierKeys = new Set<string>();
@@ -179,6 +172,10 @@ export class KeyNode extends TickingNode<KeyNodeState> {
 
         state.isDown = false;
         state.lastReleaseTime = now;
+    }
+
+    protected override defaultName(): string {
+        return this.chord;
     }
 
     override tick(event: TickEvent, head: HeadPointer) {

@@ -80,6 +80,7 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
 
     constructor(config: BaseNodeConfig = {}) {
         const options = { ...DEFAULT_BASE_NODE_CONFIG, ...config };
+        this._name = options.name ?? "";
         this.strictMode = options.strict;
     }
 
@@ -233,9 +234,9 @@ export abstract class TickingNode<
     private timeoutValue = Infinity;
 
     constructor(config: TickingNodeConfig = {}) {
-        const options = { ...DEFAULT_TICKING_NODE_CONFIG, ...config };
+        const {timeout} = { ...DEFAULT_TICKING_NODE_CONFIG, ...config };
         super(config);
-        this.timeoutValue = options.timeout;
+        this.timeoutValue = timeout;
         this.addCondition(this.checkTimeout.bind(this));
     }
 
