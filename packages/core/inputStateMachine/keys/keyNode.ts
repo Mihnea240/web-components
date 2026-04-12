@@ -133,6 +133,17 @@ export class KeyNode extends TickingNode<KeyNodeState> {
 
     private isKeyMine(event: KeyboardEvent) {
         const normalizedKey = KeyNode.normalizeKeyToken(event.key);
+
+        // For keyup, the browser reports modifier flags after release, so match by
+        // released key identity instead of requiring modifier mask to remain active.
+        if (event.type === "keyup") {
+            if (this.requiredNonModifierKeys.size > 0) {
+                return this.requiredNonModifierKeys.has(normalizedKey);
+            }
+
+            return this.requiredModifierKeys.has(normalizedKey);
+        }
+
         const eventModifierMask = KeyNode.getEventModifierMask(event);
 
         // Require all configured modifier keys to be active.
