@@ -117,7 +117,7 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
         return this;
     }
 
-    abstract handleSignal(type: string, event: Event, head: HeadPointer): boolean;
+    abstract handleSignal(event: Event, head: HeadPointer): boolean;
     abstract onExit(head: HeadPointer): void;
     abstract onEnter(head: HeadPointer): void;
     abstract isActiveState(head: HeadPointer): boolean;
@@ -125,18 +125,19 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
     /**
      * Processes a signal and resolves the next transition port, if any.
      */
-    onSignal(type: string, event: Event, head: HeadPointer): NodePort | null {
+    onSignal(event: Event, head: HeadPointer): NodePort | null {
+        const type = event.type;
         const mySignal = this.isSignalAllowed(type);
         if (!mySignal) {
             return null;
         }
 
-        const relevantSignal = this.isRelevantSignal(type, event);
+        const relevantSignal = this.isRelevantSignal(event, head);
         if (this.strictMode && !relevantSignal) {
             return this.ports.fail;
         }
 
-        if (relevantSignal && this.handleSignal(type, event, head)) {
+        if (relevantSignal && this.handleSignal(event, head)) {
             return this.evaluateConditions(this.getMetadata(head));
         }
 
@@ -204,15 +205,20 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
     }
 
     protected isSignalAllowed(type: string): boolean {
-        return this.filteredSignals.size == 0 ? true: this.filteredSignals.has(type);
+        return this.filteredSignals.size === 0 ? true : this.filteredSignals.has(type);
     }
 
-    isRelevantSignal(type: string, event: Event): boolean {
-        return this.isSignalAllowed(type);
+    /**
+     * Filter for signal that the node is intrested in.
+     */
+    isRelevantSignal(event: Event, head: HeadPointer): boolean {
+        return this.isSignalAllowed(event.type);
     }
-
-    isWakeupSignal(type: string, event: Event): boolean {
-        return this.isSignalAllowed(type);
+    /**
+     * Filter for signals that should activate this node from IDLE.
+     */
+    isWakeupSignal(event: Event): boolean {
+        return this.isSignalAllowed(event.type);
     }
 
     /**

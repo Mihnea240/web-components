@@ -94,8 +94,8 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 				.addNode(new TapNode("q", { timeout: 1000 }), { success: "A & B" })
 				.addNode(
 					new GateNode([
-						new StateMachine("A").addNode(new TapNode("a", { strict: true })),
-						new StateMachine("B").addNode(new TapNode("b", { strict: true })),
+						new StateMachine("A").addNode(new TapNode("a")),
+						new StateMachine("B").addNode(new TapNode("b")),
 					], { timeWindow: 1000 })
 				),
 			onSuccess: () => console.warn(">>> COMBO: Q followed by A+B Gate!"),
@@ -164,8 +164,8 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 		return {
 			machine: new StateMachine("Ctrl_Double_Click").addNode(
 				new GateNode([
-					new StateMachine("CtrlDown").addNode(new KeyNode("ctrl", { name: "ctrl-down", triggerOnPress: false, timeout: 5000 })),
-					new StateMachine("DoubleClick").addNode(new PointerMultipleTapNode(2, { name: "double-click-left", pointerType: "mouse", buttons: [0], timeout: 2500 })),
+					new StateMachine("CtrlDown").addNode(new KeyNode("ctrl", {triggerOnPress: false, countsAsActive: true})),
+					new StateMachine("DoubleClick").addNode(new PointerMultipleTapNode(2, {buttons: [0], timeout: 2500 })),
 				], { timeWindow: 700 })
 			),
 			onSuccess: () => console.warn(">>> CTRL + DOUBLE CLICK COMBO"),
@@ -194,7 +194,8 @@ Object.entries(ShortcutRegistry).forEach(([, factory]) => {
 	successCallbacks.set(machine.name, onSuccess);
 });
 
-stateManager.addTransitionListener("ALL", (head, event) => {
+stateManager.addTransitionListener((head, event) => {
+	if (event.machineName !== "Ctrl_Double_Click") return;
 	const eventLabel = `${event.machineName}:${event.fromState}->${event.toState}`;
 	console.log(`Transition Event: ${eventLabel} on machine ${head.stateMachine.name}`);
 	if (event.machineName === head.stateMachine.name && event.toState === "SUCCESS") {

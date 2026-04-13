@@ -42,7 +42,7 @@ export class SignalProvider {
      * Handles a DOM event by forwarding it as an input signal.
      */
     handleEvent(ev: Event) {
-        this.stateManager.emitSignal(ev.type, ev);
+        this.stateManager.emitSignal(ev);
     }
 
     private tick() {

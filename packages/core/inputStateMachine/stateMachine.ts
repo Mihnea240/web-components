@@ -58,8 +58,8 @@ export class StateMachine {
     /**
      * Returns true when the root node should awaken for the given signal.
      */
-    isWakeupSignal(type: string, event: Event) {
-        return this.root?.isWakeupSignal(type, event) ?? false;
+    isWakeupSignal(event: Event) {
+        return this.root?.isWakeupSignal(event) ?? false;
     }
 
     /**

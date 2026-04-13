@@ -236,11 +236,13 @@ export class PointerNode extends TickingNode<PointerNodeState> {
         this.setMetadata(head, new PointerNodeState(performance.now()));
     }
 
-    override isRelevantSignal(type: string, event: PointerLikeEvent): boolean {
+    override isRelevantSignal(event: PointerLikeEvent): boolean {
+        const type = event.type;
         return this.isRelevantButtonSignal(type, event);
     }
 
-    override isWakeupSignal(type: string, event: PointerLikeEvent): boolean {
+    override isWakeupSignal(event: PointerLikeEvent): boolean {
+        const type = event.type;
         if (!type.endsWith("down")) {
             return false;
         }
@@ -257,7 +259,8 @@ export class PointerNode extends TickingNode<PointerNodeState> {
         return state.isDown && state.pressCount === this.requiredPressCount && state.heldTime >= this.requiredHoldTime;
     }
 
-    override handleSignal(type: string, event: PointerLikeEvent, head: HeadPointer): boolean {
+    override handleSignal(event: PointerLikeEvent, head: HeadPointer): boolean {
+        const type = event.type;
         if (!this.isRelevantButtonSignal(type, event)) {
             return false;
         }

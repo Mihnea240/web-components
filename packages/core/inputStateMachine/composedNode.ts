@@ -18,9 +18,9 @@ const DEFAULT_GATE_OPTIONS = {
 
 class ComposedNodeState extends NodeState {
     public machineTime: Map<string, number> = new Map();
-    public failureReason = "";
+    public hasFailed = false;
     public stateManager: StateManager;
-    public lastSuccessTime = 0;
+    public hasSucceeded = false;
 
     constructor(startTime: number, stateMachines?: StateMachine[]) {
         super(startTime);
@@ -30,25 +30,26 @@ class ComposedNodeState extends NodeState {
             this.stateManager.addStateMachine(sm);
         }
 
-        this.stateManager.addTransitionListener("ALL", (head, event) => {
-            const { machineName, fromState: fromNode, toState: toNode } = event;
-            console.log(`Internal transition ${machineName}:${fromNode}->${toNode}`);
+        this.stateManager.addTransitionListener((head, event) => {
+            const { machineName, fromState, toState } = event;
+            console.log(`Internal transition ${machineName}:${fromState}->${toState}`);
 
-            if (toNode === "SUCCESS") { 
-                this.machineTime.set(machineName, head.data[fromNode].currentTime);
+            if (toState === "SUCCESS") {
+                this.machineTime.set(machineName, head.data[fromState].currentTime);
             }
 
-            if (toNode === "IDLE") {
+            if (toState === "IDLE") {
                 // Machine dropped out of its active/success path; clear stale latch immediately.
                 this.machineTime.delete(machineName);
-                this.failureReason = `Sub-machine ${machineName} failed before success`;
+                this.hasFailed = true;
             }
         });
     }
 
     clean() {
         this.machineTime.clear();
-        this.failureReason = "";
+        this.hasFailed = false;
+        this.hasSucceeded = false;
     }
 }
 
@@ -57,7 +58,7 @@ export class GateNode extends TickingNode<ComposedNodeState> {
     public stateMachines: StateMachine[];
 
     constructor(stateMachines: StateMachine[], config: GateNodeConfig = {}) {
-        const { timeWindow, ...nodeConfig } = {...DEFAULT_GATE_OPTIONS, ...config};
+        const { timeWindow, ...nodeConfig } = { ...DEFAULT_GATE_OPTIONS, ...config };
         super(nodeConfig);
 
         this.stateMachines = stateMachines;
@@ -70,12 +71,15 @@ export class GateNode extends TickingNode<ComposedNodeState> {
         return this.stateMachines.map(sm => sm.name).join(" & ");
     }
 
-    override isWakeupSignal(type: string, event: Event): boolean {
-        return this.stateMachines.some(sm => sm.isWakeupSignal(type, event));
+    override isWakeupSignal(event: Event): boolean {
+        return this.stateMachines.some(sm => sm.isWakeupSignal(event));
     }
 
-    override isRelevantSignal(type: string, event: Event): boolean {
+    override isRelevantSignal(event: Event, head: HeadPointer): boolean {
         return true;
+        const state = this.getMetadata(head);
+        const heads = state.stateManager.heads;
+        return !heads.size ? true : heads.values().some(head => head.activeNode!.isRelevantSignal(event, head));
     }
 
 
@@ -88,12 +92,12 @@ export class GateNode extends TickingNode<ComposedNodeState> {
     }
 
     private checkConditions(state: ComposedNodeState) {
-        if (state.failureReason) {
-            console.log(`GateNode failed: ${state.failureReason}`);
+        if (state.hasFailed) {
+            console.log(`GateNode failed: ${state.hasFailed}`);
             return this.ports.fail;
         }
 
-        for(const [machineName, exitTime] of state.machineTime.entries()) {
+        for (const [machineName, exitTime] of state.machineTime.entries()) {
             if (performance.now() - exitTime > this.burstTimeout) {
                 console.log(`GateNode failed: machine ${machineName} exited too long ago (${performance.now() - exitTime}ms)`);
                 return this.ports.fail;
@@ -101,7 +105,7 @@ export class GateNode extends TickingNode<ComposedNodeState> {
         }
 
         let activeCnt = 0;
-        for (const head of state.stateManager.getHeads()) {
+        for (const head of state.stateManager.heads) {
             const active = head.activeNode!.isActiveState(head);
             if (active && head.activeNode!.countsAsActive) {
                 activeCnt++;
@@ -110,20 +114,20 @@ export class GateNode extends TickingNode<ComposedNodeState> {
         }
 
         if (state.machineTime.size === this.stateMachines.length) {
-            state.lastSuccessTime = performance.now();
-            state.machineTime.clear();
-            return {targetNode: "REPEAT_SUCCESS"};
+            state.clean();
+            state.hasSucceeded = true;
+            return { targetNode: "REPEAT_SUCCESS" };
         }
 
-        if (activeCnt === 0 && state.machineTime.size == 0) {
+        if (state.hasSucceeded && activeCnt === 0 && state.machineTime.size == 0) {
             return this.ports.fail;
         }
 
         return null;
     }
 
-    override handleSignal(type: string, event: Event, head: HeadPointer): boolean {
-        this.getMetadata(head).stateManager.emitSignal(type, event);
+    override handleSignal(event: Event, head: HeadPointer): boolean {
+        this.getMetadata(head).stateManager.emitSignal(event);
         return true;
     }
 
@@ -132,7 +136,7 @@ export class GateNode extends TickingNode<ComposedNodeState> {
     }
 
     override isActiveState(head: HeadPointer): boolean {
-        throw new Error("Method not implemented.");
+        return this.getMetadata(head).stateManager.hasActiveHeads();
     }
 
 }

@@ -72,12 +72,12 @@ export class HeadPointer {
         return newState;
     }
 
-    sendSignal(type: string, event: Event) {
+    sendSignal(event: Event) {
         let transitions = 0;
 
         if (this.activeNode && transitions < this.maxNodeTransitions) {
             const node = this.activeNode;
-            const nextPort = node.onSignal(type, event, this);
+            const nextPort = node.onSignal(event, this);
 
             if (!nextPort) {
                 return null;

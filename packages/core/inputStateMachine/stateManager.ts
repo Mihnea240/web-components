@@ -1,4 +1,3 @@
-import getOrCompute from "@core/util/getOrCompute";
 import { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
 import type { StateMachine } from "./stateMachine";
@@ -9,8 +8,6 @@ export type TransitionEvent = {
     toState: string;
 };
 
-type TransitionEventKey = `${string}:${string}->${string}`;
-
 export type TransitionHandler = (head: HeadPointer, event: TransitionEvent) => void;
 
 /**
@@ -18,11 +15,8 @@ export type TransitionHandler = (head: HeadPointer, event: TransitionEvent) => v
  */
 export class StateManager {
     private readonly stateMachines = new Map<string, StateMachine>();
-    private heads = new Set<HeadPointer>();
-    private transitionCallbacks = new Map<
-        TransitionEventKey | "ALL",
-        Array<TransitionHandler>
-    >();
+    public readonly heads = new Set<HeadPointer>();
+    private transitionCallbacks: Array<TransitionHandler> = [];
 
     private lockedMachines = new Set<string>();
 
@@ -48,9 +42,10 @@ export class StateManager {
         this.lockedMachines.delete(head.stateMachine.name);
     }
 
-    private wakeStateMachines(type: string, event: Event) {
+    private wakeStateMachines(event: Event) {
+        const type = event.type;
         for (const stateMachine of this.stateMachines.values()) {
-            if (!stateMachine.isWakeupSignal(type, event)) continue;
+            if (!stateMachine.isWakeupSignal(event)) continue;
             if (this.lockedMachines.has(stateMachine.name)) continue;
 
             this.createHeadPointer(stateMachine.name);
@@ -64,40 +59,27 @@ export class StateManager {
     }
 
     /**
-     * Subscribes to one transition or all transitions using "ALL".
+     * Subscribes to all transition events.
      */
-    addTransitionListener(event: TransitionEvent | "ALL", callback: TransitionHandler) {
-        const eventKey = event === "ALL" ? "ALL" : this.toTransitionKey(event);
-        getOrCompute(this.transitionCallbacks, eventKey, () => []).push(callback);
+    addTransitionListener(callback: TransitionHandler) {
+        this.transitionCallbacks.push(callback);
     }
 
     /**
      * Removes a previously registered transition callback.
      */
-    removeTransitionCallbacks(event: TransitionEvent | "ALL", callback: TransitionHandler) {
-        const eventKey = event === "ALL" ? "ALL" : this.toTransitionKey(event);
-        const callbacks = this.transitionCallbacks.get(eventKey);
-        if (!callbacks) return;
-
-        const index = callbacks.indexOf(callback);
+    removeTransitionCallbacks(callback: TransitionHandler) {
+        const index = this.transitionCallbacks.indexOf(callback);
         if (index !== -1) {
-            callbacks.splice(index, 1);
+            this.transitionCallbacks.splice(index, 1);
         }
     }
 
     /**
-     * Dispatches a transition event to specific and global listeners.
+     * Dispatches a transition event to all listeners.
      */
     handleTransitionEvent(event: TransitionEvent, head: HeadPointer) {
-        const callbacks = this.transitionCallbacks.get(this.toTransitionKey(event));
-        const allCallbacks = this.transitionCallbacks.get("ALL");
-
-        allCallbacks?.forEach(callback => callback(head, event));
-        callbacks?.forEach(callback => callback(head, event));
-    }
-
-    private toTransitionKey(event: TransitionEvent): TransitionEventKey {
-        return `${event.machineName}:${event.fromState}->${event.toState}`;
+        this.transitionCallbacks.forEach(callback => callback(head, event));
     }
 
     /**
@@ -112,6 +94,7 @@ export class StateManager {
      */
     hasActiveHeads(): boolean {
         return this.heads.values().some(head => head.activeNode?.isActiveState(head));
+
     }
 
     /**
@@ -135,13 +118,6 @@ export class StateManager {
     }
 
     /**
-     * Returns the currently active head iterator.
-     */
-    getHeads() {
-        return this.heads.values();
-    }
-
-    /**
      * Returns true when at least one registered machine needs ticking.
      */
     hasTickingMachines(): boolean {
@@ -152,18 +128,18 @@ export class StateManager {
     /**
      * Emits a DOM signal into the manager and advances awakened heads.
      */
-    emitSignal(type: string, event: Event) {
-        this.wakeStateMachines(type, event);
+    emitSignal(event: Event) {
+        this.wakeStateMachines(event);
 
         for (const head of this.heads.values()) {
-            const result = head.sendSignal(type, event)
+            const result = head.sendSignal(event)
             this.handleNewState(head, result);
         }
     }
 
     /** @internal Engine helper; prefer machine-level checks from callers. */
-    isWakeupSignal(type: string, event: Event): StateMachine | null {
-        return this.stateMachines.values().find(machine => machine.isWakeupSignal(type, event)) ?? null;
+    isWakeupSignal(event: Event): StateMachine | null {
+        return this.stateMachines.values().find(machine => machine.isWakeupSignal(event)) ?? null;
     }
 
     /**
@@ -171,7 +147,7 @@ export class StateManager {
      */
     abort(stateMachineName: string | null = null) {
         if (!stateMachineName) {
-            this.heads.values().forEach(head => head.abort());
+            this.heads.forEach(head => head.abort());
             return;
         }
 
