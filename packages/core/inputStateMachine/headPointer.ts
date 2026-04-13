@@ -1,7 +1,7 @@
 import { NodeState, TickingNode, type BaseNode, type NodePort } from "./baseNode";
 import type { TickEvent } from "./signalProvider";
 import type { StateMachine } from "./stateMachine";
-import type { StateManager, TransitionEventType } from "./stateManager";
+import type { StateManager } from "./stateManager";
 
 export class HeadPointer {
     public activeNode: BaseNode | null = null;
@@ -18,7 +18,11 @@ export class HeadPointer {
     /** @internal Emitted by engine lifecycle transitions only. */
     public emitTransitionEvent(fromState: string, toState: string) {
         this.stateManager.handleTransitionEvent(
-            `${this.stateMachine.name}:${fromState}->${toState}` as TransitionEventType,
+            {
+                machineName: this.stateMachine.name,
+                fromState,
+                toState,
+            },
             this,
         );
     }
@@ -32,19 +36,24 @@ export class HeadPointer {
         const fromState = lastState ?? currentNode.name;
         const newState = port.targetNode;
 
+        if (newState === "REPEAT_SUCCESS") {
+            this.emitTransitionEvent(fromState, "SUCCESS");
+            return null;
+        }
+
         if (newState === "IDLE" || newState === "SUCCESS") {
+            this.emitTransitionEvent(fromState, newState);
             currentNode.onExit(this);
             this.previousNode = currentNode;
-            this.emitTransitionEvent(fromState, newState);
             return newState;
         }
 
         if (newState === fromState) {
             // Self-transition: reset lifecycle (exit then re-enter) but stop composition
+            this.emitTransitionEvent(fromState, newState);
             currentNode.onExit(this);
             currentNode.onEnter(this);
             this.previousNode = currentNode;
-            this.emitTransitionEvent(fromState, newState);
             return newState;
         }
 
@@ -55,11 +64,11 @@ export class HeadPointer {
         }
 
         const oldNode = currentNode;
+        this.emitTransitionEvent(fromState, newState);
         oldNode.onExit(this);
         this.previousNode = oldNode;
         this.activeNode = newNode;
         this.activeNode.onEnter(this);
-        this.emitTransitionEvent(fromState, newState);
         return newState;
     }
 
@@ -101,9 +110,9 @@ export class HeadPointer {
         if (!this.activeNode) {
             return;
         }
-        this.activeNode.onExit(this);
         const fromState = this.activeNode.name;
-        this.activeNode = null;
         this.emitTransitionEvent(fromState, "IDLE");
+        this.activeNode.onExit(this);
+        this.activeNode = null;
     }
 }

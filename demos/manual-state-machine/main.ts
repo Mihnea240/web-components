@@ -1,6 +1,6 @@
 import { GateNode } from "@core/inputStateMachine/composedNode";
 import { HoldNode, KeyNode, MultipleTapNode, TapNode } from "@core/inputStateMachine/keys";
-import { PointerHoldNode, PointerMultipleTapNode, PointerTapNode } from "@core/inputStateMachine/pointer";
+import { PointerHoldNode, PointerMultipleTapNode, PointerNode, PointerTapNode } from "@core/inputStateMachine/pointer";
 import { SignalProvider } from "@core/inputStateMachine/signalProvider";
 import { StateMachine } from "@core/inputStateMachine/stateMachine";
 import { StateManager } from "@core/inputStateMachine/stateManager";
@@ -48,9 +48,9 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 		return {
 			machine: new StateMachine("A+B").addNode(
 				new GateNode([
-					new StateMachine("A").addNode(new TapNode("a", { strict: true })),
-					new StateMachine("B").addNode(new TapNode("b", { strict: true })),
-				]).timeWindow(2000)
+					new StateMachine("A").addNode(new TapNode("a", { countsAsActive: true })),
+					new StateMachine("B").addNode(new TapNode("b")),
+				], { timeWindow: 300 })
 			),
 			onSuccess: (data) => console.warn(">>> GATE OPENED", data),
 		};
@@ -91,12 +91,12 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 	SEQUENCE_INTO_GATE: () => {
 		return {
 			machine: new StateMachine("Q_THEN_AB")
-				.addNode(new TapNode("q", { name: "start-q", timeout: 1000 }), { success: "gate_ab" })
+				.addNode(new TapNode("q", { timeout: 1000 }), { success: "A & B" })
 				.addNode(
 					new GateNode([
-						new StateMachine("Seq->Gate_A").addNode(new TapNode("a", { strict: true })),
-						new StateMachine("Seq->Gate_B").addNode(new TapNode("b", { strict: true })),
-					]).timeWindow(1000)
+						new StateMachine("A").addNode(new TapNode("a", { strict: true })),
+						new StateMachine("B").addNode(new TapNode("b", { strict: true })),
+					], { timeWindow: 1000 })
 				),
 			onSuccess: () => console.warn(">>> COMBO: Q followed by A+B Gate!"),
 		};
@@ -140,9 +140,9 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 		return {
 			machine: new StateMachine("Shift_Left_Click").addNode(
 				new GateNode([
-					new StateMachine("ShiftDown").addNode(new KeyNode("shift", { name: "shift-down", triggerOnPress: false, timeout: 4000 })),
-					new StateMachine("LeftClick").addNode(new PointerTapNode({ name: "left-click", pointerType: "mouse", buttons: [0], timeout: 2000 })),
-				]).timeWindow(350)
+					new StateMachine("ShiftDown").addNode(new KeyNode("shift", { triggerOnPress: false, countsAsActive: true, timeout: 2000 })),
+					new StateMachine("LeftClick").addNode(new PointerNode({ buttons: [0] })),
+				], { timeWindow: 300 })
 			),
 			onSuccess: () => console.warn(">>> SHIFT + LEFT CLICK COMBO"),
 		};
@@ -154,7 +154,7 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 				new GateNode([
 					new StateMachine("AltDown").addNode(new KeyNode("alt", { name: "alt-down", triggerOnPress: false, timeout: 4000 })),
 					new StateMachine("RightClick").addNode(new PointerTapNode({ name: "right-click", pointerType: "mouse", buttons: [2], timeout: 2000 })),
-				]).timeWindow(350)
+				], { timeWindow: 350 })
 			),
 			onSuccess: () => console.warn(">>> ALT + RIGHT CLICK COMBO"),
 		};
@@ -166,14 +166,14 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 				new GateNode([
 					new StateMachine("CtrlDown").addNode(new KeyNode("ctrl", { name: "ctrl-down", triggerOnPress: false, timeout: 5000 })),
 					new StateMachine("DoubleClick").addNode(new PointerMultipleTapNode(2, { name: "double-click-left", pointerType: "mouse", buttons: [0], timeout: 2500 })),
-				]).timeWindow(700)
+				], { timeWindow: 700 })
 			),
 			onSuccess: () => console.warn(">>> CTRL + DOUBLE CLICK COMBO"),
 		};
 	},
 };
 
-function  renderShortcutsTable(rows: ShortcutHelp[]) {
+function renderShortcutsTable(rows: ShortcutHelp[]) {
 	const body = document.querySelector<HTMLTableSectionElement>("#shortcuts-table tbody");
 	if (!body) {
 		return;
@@ -194,9 +194,10 @@ Object.entries(ShortcutRegistry).forEach(([, factory]) => {
 	successCallbacks.set(machine.name, onSuccess);
 });
 
-stateManager.addTransitionListener("ALL", (head, eventType) => {
-	console.log(`Transition Event: ${eventType} on machine ${head.stateMachine.name}`);
-	if (eventType.startsWith(`${head.stateMachine.name}:`) && eventType.endsWith("->SUCCESS")) {
+stateManager.addTransitionListener("ALL", (head, event) => {
+	const eventLabel = `${event.machineName}:${event.fromState}->${event.toState}`;
+	console.log(`Transition Event: ${eventLabel} on machine ${head.stateMachine.name}`);
+	if (event.machineName === head.stateMachine.name && event.toState === "SUCCESS") {
 		successCallbacks.get(head.stateMachine.name)?.(head.data);
 	}
 });

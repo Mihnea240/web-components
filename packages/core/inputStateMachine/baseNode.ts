@@ -45,6 +45,8 @@ export type BaseNodeConfig = {
     name?: string;
     /** If true, the node will fail if no conditions are matched. If false, unmatched states are ignored. @default false */
     strict?: boolean;
+    /** If true, this node's active state counts toward composition satisfaction (e.g., in GateNode). Typically used with triggerOnPress: false so the node remains active until release. @default false */
+    countsAsActive?: boolean;
 };
 
 /**
@@ -56,8 +58,9 @@ export type TickingNodeConfig = BaseNodeConfig & {
     timeout?: number;
 };
 
-const DEFAULT_BASE_NODE_CONFIG: Required<Pick<BaseNodeConfig, "strict">> = {
+const DEFAULT_BASE_NODE_CONFIG: Required<Pick<BaseNodeConfig, "strict" | "countsAsActive">> = {
     strict: false,
+    countsAsActive: false,
 };
 
 const DEFAULT_TICKING_NODE_CONFIG: Required<Pick<TickingNodeConfig, "timeout">> = {
@@ -74,6 +77,7 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
 
     protected ports: P = DEFAULT_NODE_PORTS as any;
     protected strictMode = false;
+    public countsAsActive = false;
 
     private conditions: Array<(state: T) => NodePort | null> = [];
     private filteredSignals = new Set<string>();
@@ -82,6 +86,7 @@ export abstract class BaseNode<T extends NodeState = NodeState, P extends NodeRo
         const options = { ...DEFAULT_BASE_NODE_CONFIG, ...config };
         this._name = options.name ?? "";
         this.strictMode = options.strict;
+        this.countsAsActive = options.countsAsActive;
     }
 
     get name() {

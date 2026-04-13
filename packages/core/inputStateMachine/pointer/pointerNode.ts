@@ -114,6 +114,10 @@ export class PointerNode extends TickingNode<PointerNodeState> {
         this.addCondition(this.localConditions);
     }
 
+    protected override defaultName() {
+        return this.pointerType + "+" + (this.buttons.length > 0 ? this.buttons.join(",") : "any");
+    }
+
     private static normalizeButtons(buttons?: readonly number[]): number[] {
         return [...new Set(buttons ?? [])]
             .filter(value => Number.isInteger(value) && value >= 0 && value <= 4)

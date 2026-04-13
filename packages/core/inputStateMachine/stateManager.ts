@@ -3,8 +3,15 @@ import { HeadPointer } from "./headPointer";
 import type { TickEvent } from "./signalProvider";
 import type { StateMachine } from "./stateMachine";
 
-export type TransitionEventType = `${string}:${string}->${string}`;
-export type TransitionHandler = (head: HeadPointer, eventType: TransitionEventType) => void;
+export type TransitionEvent = {
+    machineName: string;
+    fromState: string;
+    toState: string;
+};
+
+type TransitionEventKey = `${string}:${string}->${string}`;
+
+export type TransitionHandler = (head: HeadPointer, event: TransitionEvent) => void;
 
 /**
  * Runtime coordinator that owns machines, active heads, and transitions.
@@ -13,7 +20,7 @@ export class StateManager {
     private readonly stateMachines = new Map<string, StateMachine>();
     private heads = new Set<HeadPointer>();
     private transitionCallbacks = new Map<
-        TransitionEventType | "ALL",
+        TransitionEventKey | "ALL",
         Array<TransitionHandler>
     >();
 
@@ -59,15 +66,17 @@ export class StateManager {
     /**
      * Subscribes to one transition or all transitions using "ALL".
      */
-    addTransitionListener(eventType: TransitionEventType | "ALL", callback: TransitionHandler) {
-        getOrCompute(this.transitionCallbacks, eventType, () => []).push(callback);
+    addTransitionListener(event: TransitionEvent | "ALL", callback: TransitionHandler) {
+        const eventKey = event === "ALL" ? "ALL" : this.toTransitionKey(event);
+        getOrCompute(this.transitionCallbacks, eventKey, () => []).push(callback);
     }
 
     /**
      * Removes a previously registered transition callback.
      */
-    removeTransitionCallbacks(eventType: TransitionEventType | "ALL", callback: TransitionHandler) {
-        const callbacks = this.transitionCallbacks.get(eventType);
+    removeTransitionCallbacks(event: TransitionEvent | "ALL", callback: TransitionHandler) {
+        const eventKey = event === "ALL" ? "ALL" : this.toTransitionKey(event);
+        const callbacks = this.transitionCallbacks.get(eventKey);
         if (!callbacks) return;
 
         const index = callbacks.indexOf(callback);
@@ -79,12 +88,16 @@ export class StateManager {
     /**
      * Dispatches a transition event to specific and global listeners.
      */
-    handleTransitionEvent(eventType: TransitionEventType, head: HeadPointer) {
-        const callbacks = this.transitionCallbacks.get(eventType);
+    handleTransitionEvent(event: TransitionEvent, head: HeadPointer) {
+        const callbacks = this.transitionCallbacks.get(this.toTransitionKey(event));
         const allCallbacks = this.transitionCallbacks.get("ALL");
 
-        allCallbacks?.forEach(callback => callback(head, eventType));
-        callbacks?.forEach(callback => callback(head, eventType));
+        allCallbacks?.forEach(callback => callback(head, event));
+        callbacks?.forEach(callback => callback(head, event));
+    }
+
+    private toTransitionKey(event: TransitionEvent): TransitionEventKey {
+        return `${event.machineName}:${event.fromState}->${event.toState}`;
     }
 
     /**
@@ -92,6 +105,13 @@ export class StateManager {
      */
     collectSignalTypes() {
         return new Set(this.stateMachines.values().flatMap(machine => machine.collectSignalTypes()));
+    }
+
+    /**
+     * Returns true when any active head is currently in an active node state.
+     */
+    hasActiveHeads(): boolean {
+        return this.heads.values().some(head => head.activeNode?.isActiveState(head));
     }
 
     /**

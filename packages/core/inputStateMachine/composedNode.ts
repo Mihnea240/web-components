@@ -4,11 +4,23 @@ import type { TickEvent } from "./signalProvider";
 import { StateMachine } from "./stateMachine";
 import { StateManager } from "./stateManager";
 
+type GateNodeConfig = TickingNodeConfig & {
+    timeWindow?: number;
+};
+
+const DEFAULT_GATE_TIME_WINDOW = 300;
+const DEFAULT_GATE_OPTIONS = {
+    /**
+     * Time window in milliseconds for the gate condition to be satisfied after the first machine succeeds.
+     */
+    timeWindow: 300,
+}
+
 class ComposedNodeState extends NodeState {
-    public data: Map<string, number> = new Map();
-    public started = false;
+    public machineTime: Map<string, number> = new Map();
     public failureReason = "";
     public stateManager: StateManager;
+    public lastSuccessTime = 0;
 
     constructor(startTime: number, stateMachines?: StateMachine[]) {
         super(startTime);
@@ -18,28 +30,24 @@ class ComposedNodeState extends NodeState {
             this.stateManager.addStateMachine(sm);
         }
 
-        this.stateManager.addTransitionListener("ALL", (head, eventType) => {
-            const [machineName, fromNode, toNode] = eventType.split(":->");
-            console.log(`Internal transition ${eventType}`);
+        this.stateManager.addTransitionListener("ALL", (head, event) => {
+            const { machineName, fromState: fromNode, toState: toNode } = event;
+            console.log(`Internal transition ${machineName}:${fromNode}->${toNode}`);
 
-            if (this.started && this.data.has(machineName)) {
-                //Invalidate on machine reawake
+            if (toNode === "SUCCESS") { 
+                this.machineTime.set(machineName, head.data[fromNode].currentTime);
             }
 
-            if (toNode === "SUCCESS") {
-                this.data.set(machineName, head[fromNode].exitTime);
-                this.started = true;
-            }
-
-            if (toNode === "IDLE" && this.started && !this.data.has(machineName)) {
+            if (toNode === "IDLE") {
+                // Machine dropped out of its active/success path; clear stale latch immediately.
+                this.machineTime.delete(machineName);
                 this.failureReason = `Sub-machine ${machineName} failed before success`;
             }
         });
     }
 
     clean() {
-        this.data.clear();
-        this.started = false;
+        this.machineTime.clear();
         this.failureReason = "";
     }
 }
@@ -48,9 +56,12 @@ export class GateNode extends TickingNode<ComposedNodeState> {
     private burstTimeout = 0;
     public stateMachines: StateMachine[];
 
-    constructor(stateMachines: StateMachine[], config: TickingNodeConfig = {}) {
-        super(config);
+    constructor(stateMachines: StateMachine[], config: GateNodeConfig = {}) {
+        const { timeWindow, ...nodeConfig } = {...DEFAULT_GATE_OPTIONS, ...config};
+        super(nodeConfig);
+
         this.stateMachines = stateMachines;
+        this.burstTimeout = timeWindow;
 
         this.addCondition(this.checkConditions.bind(this));
     }
@@ -59,19 +70,8 @@ export class GateNode extends TickingNode<ComposedNodeState> {
         return this.stateMachines.map(sm => sm.name).join(" & ");
     }
 
-    timeWindow(ms: number): this {
-        this.burstTimeout = ms;
-        return this;
-    }
-
     override isWakeupSignal(type: string, event: Event): boolean {
-        for (const sm of this.stateMachines) {
-            if (sm.isWakeupSignal(type, event)) {
-                return sm.root?.isWakeupSignal(type, event) ?? false;
-            }
-        }
-
-        return false;
+        return this.stateMachines.some(sm => sm.isWakeupSignal(type, event));
     }
 
     override isRelevantSignal(type: string, event: Event): boolean {
@@ -88,54 +88,35 @@ export class GateNode extends TickingNode<ComposedNodeState> {
     }
 
     private checkConditions(state: ComposedNodeState) {
-        const stateMachines = this.stateMachines;
-        const heads = state.stateManager.getHeads();
-
-        // Fail immediately if a sub-machine failed before success
         if (state.failureReason) {
-            console.warn(`GateNode failed: ${state.failureReason}`);
-            state.stateManager.abort();
-            state.failureReason = "";
+            console.log(`GateNode failed: ${state.failureReason}`);
             return this.ports.fail;
         }
 
-        for (const head of heads) {
-            const { activeNode, stateMachine } = head;
-            const machineName = stateMachine.name;
-
-            if (!activeNode) {
-                continue;
-            }
-            const active = activeNode.isActiveState(head);
-            
-            if (!active && state.data.has(machineName) && state.currentTime - state.data.get(machineName)! > this.burstTimeout) {
-                state.stateManager.abort();
+        for(const [machineName, exitTime] of state.machineTime.entries()) {
+            if (performance.now() - exitTime > this.burstTimeout) {
+                console.log(`GateNode failed: machine ${machineName} exited too long ago (${performance.now() - exitTime}ms)`);
                 return this.ports.fail;
             }
+        }
 
-            if (active) {
-                state.started = true;
-                state.data.set(head.stateMachine.name, activeNode.getMetadata(head).currentTime);
+        let activeCnt = 0;
+        for (const head of state.stateManager.getHeads()) {
+            const active = head.activeNode!.isActiveState(head);
+            if (active && head.activeNode!.countsAsActive) {
+                activeCnt++;
+                state.machineTime.set(head.stateMachine.name, performance.now());
             }
         }
 
-        if (!state.started) {
-            return null;
+        if (state.machineTime.size === this.stateMachines.length) {
+            state.lastSuccessTime = performance.now();
+            state.machineTime.clear();
+            return {targetNode: "REPEAT_SUCCESS"};
         }
 
-        let count = 0;
-        for (const [machineName, time] of state.data) {
-            if (state.currentTime - time > this.burstTimeout) {
-                state.stateManager.abort();
-                return this.ports.fail;
-            }
-
-            count++;
-        }
-
-        if (count === stateMachines.length) {
-            state.stateManager.abort();
-            return this.ports.success;
+        if (activeCnt === 0 && state.machineTime.size == 0) {
+            return this.ports.fail;
         }
 
         return null;
