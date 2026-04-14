@@ -1,4 +1,4 @@
-import { GateNode } from "@core/inputStateMachine/composedNode";
+import { ComposeNode } from "@core/inputStateMachine/composedNode";
 import { HoldNode, KeyNode, MultipleTapNode, TapNode } from "@core/inputStateMachine/keys";
 import { PointerHoldNode, PointerMultipleTapNode, PointerNode, PointerTapNode } from "@core/inputStateMachine/pointer";
 import { SignalProvider } from "@core/inputStateMachine/signalProvider";
@@ -27,7 +27,7 @@ const shortcutHelpRows: ShortcutHelp[] = [
 	{ id: "POINTER_DOUBLE_CLICK", gesture: "Left mouse double click", description: "Pointer double-click gesture." },
 	{ id: "POINTER_HOLD_1S", gesture: "Hold left mouse 1s, then release", description: "Release-triggered pointer hold." },
 	{ id: "POINTER_CHORD_HOLD", gesture: "Hold left+right mouse 300ms, then release", description: "Pointer chord hold on release." },
-	{ id: "SHIFT_LEFT_CLICK", gesture: "Hold Shift + left click (quick window)", description: "Held modifier + click combo via GateNode." },
+	{ id: "SHIFT_LEFT_CLICK", gesture: "Hold Shift + left click (quick window)", description: "Held modifier + click combo via ComposeNode." },
 	{ id: "ALT_RIGHT_CLICK", gesture: "Hold Alt + right click (quick window)", description: "Held modifier + right click combo." },
 	{ id: "CTRL_DOUBLE_CLICK", gesture: "Hold Ctrl + left double click (quick window)", description: "Held modifier plus multi-click combo." },
 ];
@@ -47,7 +47,7 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 	A_AND_B: () => {
 		return {
 			machine: new StateMachine("A+B").addNode(
-				new GateNode([
+				new ComposeNode([
 					new StateMachine("A").addNode(new TapNode("a", { countsAsActive: true })),
 					new StateMachine("B").addNode(new TapNode("b")),
 				], { timeWindow: 300 })
@@ -93,10 +93,10 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 			machine: new StateMachine("Q_THEN_AB")
 				.addNode(new TapNode("q", { timeout: 1000 }), { success: "A & B" })
 				.addNode(
-					new GateNode([
+					new ComposeNode([
 						new StateMachine("A").addNode(new TapNode("a")),
 						new StateMachine("B").addNode(new TapNode("b")),
-					], { timeWindow: 1000 })
+					], { timeWindow: 1000, timeout: 1000 })
 				),
 			onSuccess: () => console.warn(">>> COMBO: Q followed by A+B Gate!"),
 		};
@@ -139,7 +139,7 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 	SHIFT_LEFT_CLICK: () => {
 		return {
 			machine: new StateMachine("Shift_Left_Click").addNode(
-				new GateNode([
+				new ComposeNode([
 					new StateMachine("ShiftDown").addNode(new KeyNode("shift", { triggerOnPress: false, countsAsActive: true, timeout: 2000 })),
 					new StateMachine("LeftClick").addNode(new PointerNode({ buttons: [0] })),
 				], { timeWindow: 300 })
@@ -151,10 +151,10 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 	ALT_RIGHT_CLICK: () => {
 		return {
 			machine: new StateMachine("Alt_Right_Click").addNode(
-				new GateNode([
-					new StateMachine("AltDown").addNode(new KeyNode("alt", { name: "alt-down", triggerOnPress: false, timeout: 4000 })),
-					new StateMachine("RightClick").addNode(new PointerTapNode({ name: "right-click", pointerType: "mouse", buttons: [2], timeout: 2000 })),
-				], { timeWindow: 350 })
+				new ComposeNode([
+					new StateMachine("AltDown").addNode(new KeyNode("alt", { triggerOnPress: false, countsAsActive: false })),
+					new StateMachine("RightClick").addNode(new PointerTapNode({buttons: [2], timeout: 2000 })),
+				], { timeWindow: 300, enforceOrder: true })
 			),
 			onSuccess: () => console.warn(">>> ALT + RIGHT CLICK COMBO"),
 		};
@@ -163,7 +163,7 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 	CTRL_DOUBLE_CLICK: () => {
 		return {
 			machine: new StateMachine("Ctrl_Double_Click").addNode(
-				new GateNode([
+				new ComposeNode([
 					new StateMachine("CtrlDown").addNode(new KeyNode("ctrl", {triggerOnPress: false, countsAsActive: true})),
 					new StateMachine("DoubleClick").addNode(new PointerMultipleTapNode(2, {buttons: [0], timeout: 2500 })),
 				], { timeWindow: 700 })
@@ -195,7 +195,7 @@ Object.entries(ShortcutRegistry).forEach(([, factory]) => {
 });
 
 stateManager.addTransitionListener((head, event) => {
-	if (event.machineName !== "Ctrl_Double_Click") return;
+	// if (event.machineName !== "ALT_RIGHT_CLICK") return;
 	const eventLabel = `${event.machineName}:${event.fromState}->${event.toState}`;
 	console.log(`Transition Event: ${eventLabel} on machine ${head.stateMachine.name}`);
 	if (event.machineName === head.stateMachine.name && event.toState === "SUCCESS") {
