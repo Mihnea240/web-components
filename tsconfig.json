@@ -16,18 +16,16 @@
 		"strict": true,
 		"noImplicitAny": false,
 		"paths": {
-			"@core/*": [
-				"./packages/core/*"
-			],
-			"@decorators": [
-				"./packages/core/decorators/index"
-			],
-			"@decorators/*": [
-				"./packages/core/decorators/*"
-			],
-			"@components/*": [
-				"./packages/*/index.ts"
-			],
+			"@core/*": ["./core/*"],
+			"@decorators": ["./core/decorators/index"],
+			"@decorators/*": ["./core/decorators/*"],
+			"@components/*": ["./core/components/*/index.ts"]
 		}
-	}
+	},
+	"include": [
+		"core/components/custom-elements.d.ts",
+		"core/components/**/*",
+		"core/**/*",
+		"demos/**/*",
+	]
 }

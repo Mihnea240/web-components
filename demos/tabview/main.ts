@@ -1,1 +1,1 @@
-import "@components/tabview"
+import "@core/components/tab-view";

@@ -1,5 +1,5 @@
-import "@components/listview";
-import { ListView } from "@components/listview";
+import "@core/components/list-view";
+import { ListView } from "@core/components/list-view";
 
 function work() {
     const list = document.querySelector("#list") as ListView;
