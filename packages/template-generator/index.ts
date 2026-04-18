@@ -1,87 +1,15 @@
 import { event } from "@core/decorators";
-import { raf } from "@decorators/batch";
 import { compose, type Composed } from "@decorators/compose";
 import { query } from "@decorators/query";
 import { Mappers, reflect, watcher } from "@decorators/reflect";
 import { shadowRoot, shadowStyle } from "@decorators/shadow";
 
-export class TemplateDescriptor<T extends HTMLElement = HTMLElement, D = any> {
-    constructor(
-        public name: string,
-        public template: (data?: D) => T | undefined,
-        public hydrate?: (instance: T | undefined, data?: D) => void,
-        public cleanup?: (instance: T | undefined) => void,
-        public defaultData?: D
-    ) { }
+import { TemplateDescriptor, TemplateRegistry } from "./templateDescriptor";
 
-    instantiate(data: D) {
-        const instance = this.template(data);
-        this.hydrate?.(instance, data);
-        return instance;
-    }
-
-    destroy(instance: T) {
-        this.cleanup?.(instance);
-        instance?.remove();
-    }
-}
-
-export type TempalateDescriptorLike<T = HTMLElement, D = any> = {
-    name: string;
-    template: (data?: D) => T | undefined;
-    hydrate?: (instance: T | undefined, data?: D) => void;
-    cleanup?: (instance: T | undefined) => void;
-    defaultData?: D;
-};
-
-export class TemplateRegistry {
-    private templates: Map<string, TemplateDescriptor<any, any>> = new Map();
-
-    register<T extends HTMLElement, D = any>(descriptor: TempalateDescriptorLike<T, D>) {
-        const instance = new TemplateDescriptor(
-            descriptor.name,
-            descriptor.template,
-            descriptor.hydrate,
-            descriptor.cleanup,
-            descriptor.defaultData
-        );
-        this.templates.set(instance.name, instance);
-    }
-
-    registerTemplateElement(elementId: string) {
-        const normalizedId = elementId.startsWith("#") ? elementId.slice(1) : elementId;
-        const descriptorName = `#${normalizedId}`;
-
-        const template = document.getElementById(normalizedId) as HTMLTemplateElement | null;
-        if (!template) {
-            console.warn(`Template with id "${normalizedId}" not found.`);
-        }
-
-        const templateFunction = () => {
-            if (!template) return;
-            return template.content.firstElementChild!.cloneNode(true) as HTMLElement;
-        }
-
-        const descriptor = this.get(descriptorName);
-        if (descriptor && !descriptor.template) {
-            descriptor.template = templateFunction;
-            return;
-
-        }
-
-        this.register({
-            name: descriptorName,
-            template: templateFunction,
-        });
-    }
-
-    get(name: string) {
-        return this.templates.get(name);
-    }
-
-    delete(name: string) {
-        this.templates.delete(name);
-    }
+export type SpawnHelper = {
+    element: Node | null;
+    ready: boolean;
+    promise: Promise<void>;
 }
 
 export interface TemplateGenerator extends Composed<HTMLElement> { }
@@ -90,174 +18,261 @@ export interface TemplateGenerator extends Composed<HTMLElement> { }
 export class TemplateGenerator extends HTMLElement {
     static registry = new TemplateRegistry();
 
-    /**
-     * Sets the name of the template to be used.
-     * If the name starts with "#", it will be treated as an element ID, and the corresponding template will be registered automatically.
-     * There can be a descriptor with that name already registered, in which case the template function will be updated with the new one generated from the template element. This allows for dynamic updates of templates defined in the HTML. 
-     */
+    static commentDescriptor = new TemplateDescriptor<Node>({
+        template() {
+            return document.createComment("Loading...");
+        }
+    });
+
     @reflect("template") accessor template: string = "";
-    /**
-     * Defines where the instantiated template will be placed relative to the <template-generator> element:
-     *  * @default "childlist"
-     * 
-     * - `shadow` — Render in shadow DOM
-     * - `childlist` — Append as child alongside existing children
-     * - `before` — Insert as previous sibling
-     * - `after` — Insert as next sibling
-     */
     @reflect("placement") accessor placement: "shadow" | "childlist" | "before" | "after" = "childlist";
-    /**
-     * @default true
-     * When false, the generated item will by rehydrated when calling `load(data)` with new data.
-     * When true, the generated item will be replaced with a new instance created from the template.
-     */
     @reflect("replace", Mappers.Boolean) accessor replace: boolean = false;
-    @reflect("lazy", Mappers.Boolean) accessor lazy: boolean = false;
+
+    @query('slot:not([name])') accessor defaultSlot!: HTMLSlotElement;
+    @query('slot[name="lazy"]') accessor lazySlot!: HTMLSlotElement;
+
+    private _data: any = null;
+
+    public lazyDescriptor: TemplateDescriptor = TemplateGenerator.commentDescriptor;
+    public lazyInstance: HTMLElement | null = null;
+    /**
+     * The descriptor of the currently rendered template, if any.
+    */
+    public descriptor: TemplateDescriptor<any, any> | null = null;
+    public instance: Node | null | undefined = null;
+    private descriptorKey: string | null = null;
 
     @shadowRoot()
-    accessor root: string = /*html */`
-        <slot name="lazy"></slot>
+    accessor root = /*html */`
         <slot></slot>
+        <slot name="lazy"></slot>
     `;
 
     @shadowStyle()
-    accessor shadowStyle: string = /*css */`
-        :host:not([palcement="shadow"], [placement="childlist"]) {
+    accessor shadowStyle = /*css */`
+        :host(:not([placement="shadow"]):not([placement="childlist"])) {
+            display: none;
+        }
+
+        ::slotted([slot="lazy"]) {
             display: none;
         }
     `;
 
-    @query('slot[name="template"]')
-    accessor templateSlot!: HTMLSlotElement;
-
-    @query('slot[name="lazy"]')
-    accessor lazySlot!: HTMLSlotElement;
-
-    @query('slot:not([name])')
-    accessor defaultSlot!: HTMLSlotElement;
-
-    public templateFragment: DocumentFragment | null = null;
-    public watchedElement: HTMLElement | null = null;
-
-    private lastTemplate: string = "";
-    private outdated: boolean = true;
-
-    constructor() {
-        super();
-    }
-
-    @watcher("template")
-    updateTemplate(_old: string, newVal: string) {
+    @watcher("template", {after: false})
+    onTemplateChange(_old: string, newVal: string) {
         if (!newVal) return;
 
-        if (newVal[0] === "#") {
-            TemplateGenerator.registry.registerTemplateElement(newVal);
+        if (this.instance) {
+            this.descriptor?.destroy(this.instance);
+            this.instance = undefined;
         }
-
-        this.outdated = true;
     }
 
-    @raf()
-    hydrate(data?: any) {
-        const descriptor = TemplateGenerator.registry.get(this.template);
+    @watcher("template", { after: true })
+    onAfterTemplateChange(_old: string, newVal: string) {
+        if (!newVal) return;
 
-        if (!descriptor) {
-            console.warn(`No template registered with name "${this.template}".`);
-            return;
+        if (this.instance === undefined) {
+            this.spawnAndPlace(this._data);
         }
-
-        if (this.outdated) {
-            const lastDescriptor = TemplateGenerator.registry.get(this.lastTemplate);
-            if (lastDescriptor && this.watchedElement) {
-                lastDescriptor.destroy(this.watchedElement);
-                this.watchedElement = null;
-            }
-
-            this.watchedElement = this.instantiate(data);
-            this.outdated = false;
-
-            if (this.watchedElement) {
-                descriptor.hydrate?.(this.watchedElement, data);
-            }
-
-            return;
-        }
-
-        if (this.replace) {
-            if (this.watchedElement) {
-                descriptor.destroy(this.watchedElement);
-            }
-            this.watchedElement = this.instantiate(data);
-        } else {
-            if (!this.watchedElement) {
-                this.watchedElement = this.instantiate(data);
-            } else {
-                descriptor.hydrate?.(this.watchedElement, data);
-            }
-        }
-
     }
 
-    private instantiate(data?: any) {
-        const descriptor = TemplateGenerator.registry.get(this.template);
-        if (!descriptor) return;
+    @event("slotchange", { target: el => el.defaultSlot })
+    onSlotChange() {
+        const assigned = this.defaultSlot.assignedElements({ flatten: true });
+        const templateEl = assigned.find(el => el instanceof HTMLTemplateElement) as HTMLTemplateElement;
 
-        const instance = descriptor.instantiate(data ?? descriptor.defaultData);
-        if (!instance) return;
+        if (!templateEl) return;
+        this.descriptor = new TemplateDescriptor(templateEl);
+        this.descriptorKey = null;
+        this.template = "";
 
-        this.lastTemplate = this.template;
-        this.placeElement(instance);
-        return instance;
+        this.render();
     }
 
-    private placeElement(element: HTMLElement) {
+    @event("slotchange", { target: el => el.lazySlot })
+    onLazySlotChange() {
+        const assigned = this.lazySlot.assignedElements({ flatten: true })[0];
+
+        if (!assigned || !(assigned instanceof HTMLElement)) return;
+        this.lazyDescriptor = new TemplateDescriptor(assigned);
+    }
+
+    private placeElement(element: Node) {
         switch (this.placement) {
             case "shadow":
                 this.shadowRoot!.appendChild(element);
-                return true;
+                break;
             case "childlist":
                 this.appendChild(element);
-                return true;
+                break;
             case "before":
-                this.parentElement?.insertBefore(element, this);
-                return !!this.parentElement;
+                this.parentNode?.insertBefore(element, this);
+                break;
             case "after":
-                this.parentElement?.insertBefore(element, this.nextSibling);
-                return !!this.parentElement;
+                this.parentNode?.insertBefore(element, this.nextSibling);
+                break;
         }
     }
 
-    getDescriptor() {
-        return TemplateGenerator.registry.get(this.template);
+    private fetchDescriptor(name: string): TemplateDescriptor | Promise<TemplateDescriptor | undefined> | undefined {
+        if (!name && this.descriptor) {
+            this.descriptorKey = null;
+            return this.descriptor;
+        }
+
+        const descriptor = TemplateGenerator.registry.get(name);
+        if (descriptor) {
+            this.descriptor = descriptor;
+            this.descriptorKey = name;
+            return descriptor;
+        }
+
+        return TemplateGenerator.registry.getAsync(name).then(asyncDescriptor => {
+            if (asyncDescriptor) {
+                this.descriptor = asyncDescriptor;
+                this.descriptorKey = name;
+            }
+            return asyncDescriptor;
+        });
     }
 
-    @event("slotchange", { target: el => el.defaultSlot, selector: "template" })
-    onTemplateAdd() {
-        const assigned = this.defaultSlot.assignedElements({ flatten: true });
-        const templateEl = assigned.find(el => el.tagName.toLowerCase() === "template") as HTMLTemplateElement | undefined;
+    public spawn(data: any) {
+        const isPendingData = data instanceof Promise || typeof data?.then === "function";
+        const descriptorOrPromise = this.fetchDescriptor(this.template);
 
-        console.log("Template slot changed. Found template:", templateEl);
-        if (!templateEl) {
+        if (!isPendingData && !(descriptorOrPromise instanceof Promise)) {
+            if (!descriptorOrPromise) {
+                throw new Error(`Descriptor "${this.template}" not found.`);
+            }
+
+            const helper: SpawnHelper = {
+                element: descriptorOrPromise.instantiate(data) ?? null,
+                ready: true,
+                promise: Promise.resolve()
+            };
+
+            return helper;
+        }
+
+        const lazySpinner = this.lazyDescriptor?.instantiate() ?? null;
+        if (lazySpinner) {
+            this.lazyDescriptor?.hydrate(lazySpinner, undefined);
+        }
+
+        const helper: SpawnHelper = {
+            element: lazySpinner,
+            ready: false,
+            promise: new Promise((resolve, reject) => {
+                Promise.all([descriptorOrPromise, data]).then(([descriptor, resolvedData]) => {
+                    if (!descriptor) {
+                        reject(new Error(`Descriptor "${this.template}" not found.`));
+                        return;
+                    }
+
+                    const instance = descriptor.instantiate(resolvedData);
+                    if (!instance) {
+                        reject(new Error(`Failed to instantiate template "${this.template}".`));
+                        return;
+                    } else {
+                        descriptor.hydrate(instance, resolvedData);
+                        helper.element = instance;
+                        helper.ready = true;
+
+                        if (lazySpinner?.isConnected) {
+                            if (lazySpinner.parentNode) {
+                                lazySpinner.parentNode.replaceChild(instance, lazySpinner);
+                            }
+                        }
+                        resolve();
+                    }
+                }).catch(reject);
+            })
+        }
+
+        return helper;
+    }
+
+    public spawnAndPlace(data: any, anchor: HTMLElement = this) {
+        if (!anchor.isConnected) {
+            console.warn(`Anchor element is not connected to the DOM.`, anchor);
             return;
         }
-        if(!templateEl.id) {
-            templateEl.id = `__template_${Math.random().toString(16).slice(2)}`;
+
+        const helper = this.spawn(data);
+        if (helper.element) {
+            this.placeElement(helper.element);
+        } else {
+            helper.promise.then(() => {
+                if (helper.element) {
+                    this.placeElement(helper.element);
+                }
+            }).catch(e => {
+                console.error(`Failed to spawn and place template instance.`, e);
+            });
+        }
+    }
+
+    public hydrate(data: any, element: Node | undefined | null = this.instance) {
+        if (!element) {
+            console.warn(`No element provided for hydration, and no instance found.`, this.instance);
+            return;
         }
 
-        this.template = `#${templateEl.id}`;
+        if (!this.descriptor) {
+            console.warn(`No descriptor found for hydration.`, this.descriptorKey);
+            return;
+        }
+
+        if(data instanceof Promise || typeof data?.then === "function") {
+            data.then(resolvedData => {
+                this.descriptor?.hydrate(element, resolvedData);
+                if (element == this.instance) this._data = resolvedData;
+
+            }).catch(e => {
+                console.error(`Failed to resolve data for hydration.`, e);
+            });
+        } else {
+            this.descriptor.hydrate(element, data);
+            if (element == this.instance) this._data = data;
+
+        }
+
+    }
+
+    /**
+     * Creates an internally managed instance of the current template with the provided data,
+     * replacing any existing instance if the "replace" flag is set or an instance already exists.
+     * The instance is placed according to the "placement" property.  
+     * If the data is a Promise, the lazy template (if provided) will be rendered until the Promise resolves, at which point it will be replaced with the final instance.
+     */
+    public instantiate(data: any) {
+        const helper = this.spawn(data);
+
+        if (helper.element) {
+            if(this.instance || this.replace) {
+                this.descriptor?.destroy(this.instance);
+            }
+
+            this.placeElement(this.instance = helper.element);
+        }
+
+        return helper;
+    }
+
+    public destroy() {
+        if(!this.instance || !this.descriptor) return;
+        this.descriptor.destroy(this.instance);
+        this.instance = null;
     }
 
     connectedCallback() {
-        if (!this.template) {
-            this.onTemplateAdd();
-        }
+        // this.onSlotChange();
+        this.onLazySlotChange();
     }
 
     disconnectedCallback() {
-        const descriptor = TemplateGenerator.registry.get(this.template);
-        if (descriptor && this.watchedElement) {
-            descriptor.destroy(this.watchedElement);
-            this.watchedElement = null;
-        }
+        this.destroy();
     }
 }
