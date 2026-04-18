@@ -142,9 +142,23 @@
 
 			<div id="rows" class="rows">
 				<template-generator template="promise-row" placement="after">
-					<!-- <span slot="lazy" class="pill pending"><span class="spinner"></span>PENDING</span> -->
+					<span slot="lazy" class="pill pending"><span class="spinner"></span>PENDING</span>
 				</template-generator>
 			</div>
+
+			<section class="card" style="margin-top: 32px">
+				<h2>Internally Managed Instance & Template Swapping</h2>
+				<p>This section demonstrates direct use of <code>instantiate</code> and dynamic template swapping on a single <code>template-generator</code> element.</p>
+				<div class="controls">
+					<button id="instantiate-default">Instantiate Default</button>
+					<button id="cycle-hydrate">Hydrate Next</button>
+					<button id="swap-template">Swap Template</button>
+				</div>
+				<template-generator id="managed-generator" template="promise-row">
+					<span slot="lazy" class="pill pending"><span class="spinner"></span>PENDING</span>
+				</template-generator>
+				<div id="current-template" style="margin-top: 10px; color: var(--muted); font-size: 13px;"></div>
+			</section>
 		</section>
 	</main>
 

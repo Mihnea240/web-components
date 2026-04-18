@@ -4,7 +4,6 @@ export type AccessorKey = string | symbol;
 /** Instance of a class decorated with @compose */
 export type Composed<T = any> = T & {
     constructor: Constructor & { [Symbol.metadata]: DecoratorMetadataObject };
-    [key: AccessorKey]: any;
 };
 
 /** Constructor of a class decorated with @compose */
