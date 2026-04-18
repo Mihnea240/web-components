@@ -82,8 +82,8 @@ const ShortcutRegistry: Record<string, GestureFactory> = {
 	FAST_V_T: () => {
 		return {
 			machine: new StateMachine("Fast_VT")
-				.addNode(new TapNode("v", { name: "v-fast", strict: true, timeout: 200 }), { success: "t-fast" })
-				.addNode(new TapNode("t", { name: "t-fast", strict: true, timeout: 200 })),
+				.addNode(new TapNode("v", { name: "v-fast", timeout: 200 }), { success: "t-fast" })
+				.addNode(new TapNode("t", { name: "t-fast", timeout: 200 })),
 			onSuccess: () => console.warn(">>> FAST V->T SUCCESS (Pro Speed)"),
 		};
 	},
