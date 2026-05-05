@@ -63,7 +63,7 @@ export class TemplateGenerator extends HTMLElement {
     public instance: Node | null = null;
 
     /**The ralative anchor used for placement. Defaults to the component itself, but can be set to any other element */
-    public anchor = this;
+    public anchor: HTMLElement = this;
 
     @shadowRoot()
     accessor root = /*html */`

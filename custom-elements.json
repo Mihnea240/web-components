@@ -1,0 +1,3836 @@
+{
+  "schemaVersion": "1.0.0",
+  "readme": "",
+  "modules": [
+    {
+      "kind": "javascript-module",
+      "path": "archive/sizemodifier.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "SizeModifier",
+          "members": [
+            {
+              "kind": "field",
+              "name": "styleSheet",
+              "static": true
+            },
+            {
+              "kind": "method",
+              "name": "onDragStart",
+              "parameters": [
+                {
+                  "name": "ev"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onDrag",
+              "parameters": [
+                {
+                  "name": "ev"
+                },
+                {
+                  "name": "deltaX"
+                },
+                {
+                  "name": "deltaY"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "validateSizeChange",
+              "parameters": [
+                {
+                  "name": "data"
+                },
+                {
+                  "name": "offset"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "probeSiblings"
+            },
+            {
+              "kind": "method",
+              "name": "getPreviousTarget",
+              "parameters": [
+                {
+                  "name": "direction",
+                  "default": "0"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getNextTarget",
+              "parameters": [
+                {
+                  "name": "direction",
+                  "default": "0"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getUpdateProperty"
+            },
+            {
+              "kind": "method",
+              "name": "setDirection"
+            },
+            {
+              "kind": "method",
+              "name": "freezeSiblingSize",
+              "parameters": [
+                {
+                  "name": "recalculate",
+                  "default": "false"
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[SizeModifier.styleSheet]"
+            },
+            {
+              "kind": "field",
+              "name": "direction",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "field",
+              "name": "sibling_data",
+              "type": {
+                "text": "array"
+              },
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "index_in_siblings",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "field",
+              "name": "property_to_update",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"flex-basis\""
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "size-modifier",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SizeModifier",
+          "declaration": {
+            "name": "SizeModifier",
+            "module": "archive/sizemodifier.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "size-modifier",
+          "declaration": {
+            "name": "SizeModifier",
+            "module": "archive/sizemodifier.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "archive/tabarea.js",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "TabArea Web Component\n\nA custom HTML element that provides a flexible tab interface with keyboard navigation,\ndynamic tab management, and customizable styling through slots.",
+          "name": "TabArea",
+          "slots": [
+            {
+              "description": "Container for tab navigation buttons/links",
+              "name": "header"
+            },
+            {
+              "description": "Individual tab content panels (requires name attribute)",
+              "name": "tab"
+            },
+            {
+              "description": "Additional content below the tab area",
+              "name": "default"
+            }
+          ],
+          "members": [
+            {
+              "kind": "field",
+              "name": "styleSheet",
+              "static": true,
+              "description": "CSS stylesheet for the TabArea component",
+              "type": {
+                "text": "CSSStyleSheet"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "shadowDom",
+              "static": true,
+              "description": "Shadow DOM template for the TabArea component",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "header",
+              "description": "Gets the header container element",
+              "return": {
+                "type": {
+                  "text": "HTMLElement|null"
+                }
+              },
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "getHeaders",
+              "return": {
+                "type": {
+                  "text": "NodeListOf<HTMLElement>"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getActiveTab",
+              "return": {
+                "type": {
+                  "text": "HTMLElement"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getActiveLabel",
+              "return": {
+                "type": {
+                  "text": "HTMLElement"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "isActive",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "boolean"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getTabLabel",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "HTMLElement"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getTab",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "HTMLElement"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "deleteTab",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "{label: HTMLElement, tab: HTMLElement}"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getTabNames",
+              "return": {
+                "type": {
+                  "text": "string[]"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getRelativeTab",
+              "parameters": [
+                {
+                  "name": "direction",
+                  "default": "1",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "string|undefined"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "handleSelect",
+              "parameters": [
+                {
+                  "name": "label",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "tab",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "handleDeselect",
+              "parameters": [
+                {
+                  "name": "label",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "tab",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "select",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string|number"
+                  }
+                }
+              ],
+              "return": {
+                "type": {
+                  "text": "string|undefined"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "deselect",
+              "parameters": [
+                {
+                  "name": "name",
+                  "default": "this.active_tab",
+                  "description": "The name of the tab to deselect",
+                  "optional": true,
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ],
+              "description": "Deselects a tab by removing the active class from its label and content"
+            },
+            {
+              "kind": "field",
+              "name": "innerHTML"
+            },
+            {
+              "kind": "field",
+              "name": "adoptedStyleSheets",
+              "type": {
+                "text": "array"
+              },
+              "default": "[TabArea.styleSheet]"
+            },
+            {
+              "kind": "field",
+              "name": "active_tab",
+              "type": {
+                "text": "string|null"
+              },
+              "description": "The name of the currently active tab",
+              "default": "null"
+            }
+          ],
+          "events": [
+            {
+              "name": "tab-delete",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "name": "tab-select",
+              "type": {
+                "text": "CustomEvent"
+              }
+            },
+            {
+              "description": "Fired before a tab is selected (cancelable)",
+              "name": "TabArea#tab-select"
+            },
+            {
+              "description": "Fired before a tab is deleted (cancelable)",
+              "name": "TabArea#tab-delete"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "tab-area",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TabArea",
+          "declaration": {
+            "name": "TabArea",
+            "module": "archive/tabarea.js"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "tab-area",
+          "declaration": {
+            "name": "TabArea",
+            "module": "archive/tabarea.js"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/bitpacker/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/decorators/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/infinite-canvas/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/list-view/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/list-window/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/size-modifier/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/tabview/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "demos/template-generator/main.ts",
+      "declarations": [],
+      "exports": []
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/bitpacker/array_factory.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "BitArrayFactory",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ alignedAccessor(descriptor: FieldDescriptor): ArrayAccessor { const { bitLength, littleEndian: little_endian = false, bucket, array } = descriptor; if (!array) throw new Error(\"Array metadata missing\"); const baseByteOffset = bucket.index * bucket.sizeInBytes; const stride = bucket.sizeInBytes; // In an aligned array, each element is a full bucket const mask = bitLength === 32 ? 0xFFFFFFFF : (1 << bitLength) - 1; switch (bitLength) { case 8: return { length: array.length, get: (v, b, i) => v.getUint8(b + baseByteOffset + (i * stride)) & mask, set: (v, b, i, val) => v.setUint8(b + baseByteOffset + (i * stride), val & mask) }; case 16: return { length: array.length, get: (v, b, i) => v.getUint16(b + baseByteOffset + (i * stride), little_endian) & mask, set: (v, b, i, val) => v.setUint16(b + baseByteOffset + (i * stride), val & mask, little_endian) }; case 32: return { length: array.length, get: (v, b, i) => v.getUint32(b + baseByteOffset + (i * stride), little_endian) >>> 0, set: (v, b, i, val) => v.setUint32(b + baseByteOffset + (i * stride), val >>> 0, little_endian) }; } throw new Error(`Unsupported aligned length ${bitLength}`); }, unalignedAccessor(descriptor: FieldDescriptor): ArrayAccessor { const { bitLength, littleEndian: little_endian = false, bucket, array, packLSBFirst } = descriptor; if (!array) throw new Error(\"Array metadata missing\"); const mask = (1 << bitLength) - 1; const bucketSize = bucket.sizeInBytes; const elementsPerBucket = array.elementsPerBucket; const baseByteOffset = bucket.index * bucketSize; if (!packLSBFirst) { const startBitPos = bucket.sizeInBytes * 8 - bitLength; // Start from the most significant bit return { length: array.length, get(view, byte_offset, index) { // Calculate which bucket the index belongs to const bucketIdx = (index / elementsPerBucket) | 0; const bitOffset = startBitPos - (index % elementsPerBucket) * bitLength; const addr = byte_offset + baseByteOffset + (bucketIdx * bucketSize); const data = view.getUint32(addr, false); const value = (data >>> bitOffset) & mask; return little_endian ? swapBytes(value, bitLength) : value; }, set(view, byte_offset, index, value) { const bucketIdx = (index / elementsPerBucket) | 0; const bitOffset = startBitPos - (index % elementsPerBucket) * bitLength; let finalValue = value & mask; if (little_endian) finalValue = swapBytes(finalValue, bitLength); const addr = byte_offset + baseByteOffset + (bucketIdx * bucketSize); const currentData = view.getUint32(addr, false); const maskShifted = (mask << bitOffset) >>> 0; const newData = ((currentData & ~maskShifted) | (finalValue << bitOffset)) >>> 0; view.setUint32(addr, newData, false); } } } return { length: array.length, get(view, byte_offset, index) { // Calculate which bucket the index belongs to const bucketIdx = (index / elementsPerBucket) | 0; const bitOffset = (index % elementsPerBucket) * bitLength; const addr = byte_offset + baseByteOffset + (bucketIdx * bucketSize); const data = view.getUint32(addr, false); const value = (data >>> bitOffset) & mask; return little_endian ? swapBytes(value, bitLength) : value; }, set(view, byte_offset, index, value) { const bucketIdx = (index / elementsPerBucket) | 0; const bitOffset = (index % elementsPerBucket) * bitLength; let finalValue = value & mask; if (little_endian) finalValue = swapBytes(finalValue, bitLength); const addr = byte_offset + baseByteOffset + (bucketIdx * bucketSize); const currentData = view.getUint32(addr, false); const maskShifted = (mask << bitOffset) >>> 0; const newData = ((currentData & ~maskShifted) | (finalValue << bitOffset)) >>> 0; view.setUint32(addr, newData, false); } }; } }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BitArrayFactory",
+          "declaration": {
+            "name": "BitArrayFactory",
+            "module": "core/bitpacker/array_factory.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/bitpacker/field_factory.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "BitFieldFactory",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ allignedAccessor(descriptor: FieldDescriptor): FieldAccessor { const { bitLength, littleEndian: little_endian = false, bucket } = descriptor; const mask = bitLength == 32 ? 0xFFFFFFFF : (1 << bitLength) - 1; const bucketByteOffset = bucket.index * bucket.sizeInBytes; switch (bitLength) { case 8: return { get(view: DataView, byte_offset: number): number { return view.getUint8(byte_offset + bucketByteOffset) & mask; }, set(view: DataView, byte_offset: number, value: number): void { view.setUint8(byte_offset + bucketByteOffset, value & mask); } }; case 16: return { get(view: DataView, byte_offset: number): number { return view.getUint16(byte_offset + bucketByteOffset, little_endian) & mask; }, set(view: DataView, byte_offset: number, value: number): void { view.setUint16(byte_offset + bucketByteOffset, value & mask, little_endian); } }; case 32: return { get(view: DataView, byte_offset: number): number { return view.getUint32(byte_offset + bucketByteOffset, little_endian) & mask; }, set(view: DataView, byte_offset: number, value: number): void { view.setUint32(byte_offset + bucketByteOffset, value & mask, little_endian); } }; } throw new Error(`Unsupported bit length ${bitLength} for aligned accessor. Only 8, 16, and 32 are supported.`); }, unalignedAccessor(descriptor: FieldDescriptor): FieldAccessor { const { bitLength, littleEndian: little_endian = false, bucket } = descriptor; const mask = bitLength == 32 ? 0xFFFFFFFF : (1 << bitLength) - 1; const bucketByteOffset = bucket.index * bucket.sizeInBytes; const shift = bucket.offsetInBucket; return { get(view: DataView, byte_offset: number): number { const data = view.getUint32(byte_offset + bucketByteOffset, false); const value = (data >>> shift) & mask; // return value; return little_endian ? swapBytes(value, bitLength) : value; }, set(view: DataView, byte_offset: number, value: number): void { let finalValue = value & mask; if (little_endian) { finalValue = swapBytes(finalValue, bitLength); } // 2. Read-Modify-Write the bucket const currentData = view.getUint32(byte_offset + bucketByteOffset, false); const maskShifted = (mask << shift) >>> 0; const clearedData = (currentData & ~maskShifted) >>> 0; const newData = (clearedData | (finalValue << shift)) >>> 0; // 3. Write back the bucket (Always BE to keep neighbors intact) view.setUint32(byte_offset + bucketByteOffset, newData, false); } }; } }"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "BitFieldFactory",
+          "declaration": {
+            "name": "BitFieldFactory",
+            "module": "core/bitpacker/field_factory.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/bitpacker/index.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "swapBytes",
+          "return": {
+            "type": {
+              "text": "number"
+            }
+          },
+          "parameters": [
+            {
+              "name": "val",
+              "type": {
+                "text": "number"
+              }
+            },
+            {
+              "name": "bitLen",
+              "type": {
+                "text": "number"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "createAccessor",
+          "return": {
+            "type": {
+              "text": "FieldAccessor | ArrayAccessor"
+            }
+          },
+          "parameters": [
+            {
+              "name": "descriptor",
+              "type": {
+                "text": "FieldDescriptor"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "variable",
+          "name": "bitLength",
+          "type": {
+            "text": "number"
+          },
+          "default": "0"
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BitPacker",
+          "members": [
+            {
+              "kind": "field",
+              "name": "isLittleEndian",
+              "static": true
+            },
+            {
+              "kind": "field",
+              "name": "alignment",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "private",
+              "default": "alignment"
+            },
+            {
+              "kind": "field",
+              "name": "packLSBFirst",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "packLSBFirst"
+            },
+            {
+              "kind": "field",
+              "name": "descriptors",
+              "type": {
+                "text": "Record<string, FieldDescriptor>"
+              },
+              "privacy": "public",
+              "readonly": true,
+              "default": "{}"
+            },
+            {
+              "kind": "field",
+              "name": "accessors",
+              "type": {
+                "text": "Record<string, FieldAccessor | ArrayAccessor>"
+              },
+              "privacy": "public",
+              "readonly": true,
+              "default": "{}"
+            },
+            {
+              "kind": "field",
+              "name": "stride",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "public",
+              "readonly": true
+            },
+            {
+              "kind": "method",
+              "name": "createView",
+              "return": {
+                "type": {
+                  "text": "BitView<InferSchema<T>> & InferSchema<T>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "buffer",
+                  "type": {
+                    "text": "ArrayBuffer"
+                  }
+                },
+                {
+                  "name": "byteOffset",
+                  "default": "0"
+                }
+              ],
+              "description": "Helper to spawn a typed view directly from the packer"
+            },
+            {
+              "kind": "field"
+            }
+          ]
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "BitView",
+          "members": [
+            {
+              "kind": "field",
+              "name": "arrayProxies",
+              "type": {
+                "text": "Record<string, any>"
+              },
+              "privacy": "private",
+              "default": "{}"
+            },
+            {
+              "kind": "field",
+              "name": "packLSBFirst",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "field",
+              "name": "view",
+              "type": {
+                "text": "DataView"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "field",
+              "name": "byteOffset",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "method",
+              "name": "setBuffer",
+              "return": {
+                "type": {
+                  "text": "this"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "buffer",
+                  "type": {
+                    "text": "ArrayBuffer"
+                  }
+                },
+                {
+                  "name": "byteOffset",
+                  "default": "0"
+                },
+                {
+                  "name": "packLSBFirst",
+                  "default": "true"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "arrayProxy",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "accessor",
+                  "type": {
+                    "text": "ArrayAccessor"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "swapBytes",
+          "declaration": {
+            "name": "swapBytes",
+            "module": "core/bitpacker/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "createAccessor",
+          "declaration": {
+            "name": "createAccessor",
+            "module": "core/bitpacker/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BitPacker",
+          "declaration": {
+            "name": "BitPacker",
+            "module": "core/bitpacker/index.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "BitView",
+          "declaration": {
+            "name": "BitView",
+            "module": "core/bitpacker/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/batch.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "debounce",
+          "parameters": [
+            {
+              "name": "delay",
+              "default": "250",
+              "type": {
+                "text": "number"
+              },
+              "description": "Delay in milliseconds. Default: 250ms."
+            }
+          ],
+          "description": "Multiple calls will result in only one execution after the specified delay from the last call.\nLast call wins."
+        },
+        {
+          "kind": "function",
+          "name": "throttle",
+          "parameters": [
+            {
+              "name": "delay",
+              "default": "250",
+              "type": {
+                "text": "number"
+              },
+              "description": "Minimum milliseconds between executions. Default: `250`."
+            }
+          ],
+          "description": "Throttles method calls."
+        },
+        {
+          "kind": "function",
+          "name": "raf",
+          "description": "Batches method calls to `requestAnimationFrame`."
+        },
+        {
+          "kind": "function",
+          "name": "microBatch",
+          "description": "Batches method calls to the next microtask."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "debounce",
+          "declaration": {
+            "name": "debounce",
+            "module": "core/decorators/batch.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "throttle",
+          "declaration": {
+            "name": "throttle",
+            "module": "core/decorators/batch.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "raf",
+          "declaration": {
+            "name": "raf",
+            "module": "core/decorators/batch.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "microBatch",
+          "declaration": {
+            "name": "microBatch",
+            "module": "core/decorators/batch.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/compose.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "ComposedDecoratorManager",
+          "members": [
+            {
+              "kind": "field",
+              "name": "namespace",
+              "privacy": "private",
+              "static": true
+            },
+            {
+              "kind": "method",
+              "name": "getNamespace",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "metadata",
+                  "type": {
+                    "text": "DecoratorMetadata"
+                  }
+                }
+              ],
+              "description": "Reserves a unique symbol on the provided metadata, \nwhere composed decorators will store their data."
+            },
+            {
+              "kind": "method",
+              "name": "getManager",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "T"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "this",
+                  "type": {
+                    "text": "{ new(): T; symbol: symbol }"
+                  }
+                },
+                {
+                  "name": "metadata",
+                  "type": {
+                    "text": "DecoratorMetadata"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getManager",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "this",
+                  "type": {
+                    "text": "{ new(): T; symbol: symbol }"
+                  }
+                },
+                {
+                  "name": "metadata",
+                  "type": {
+                    "text": "null | undefined"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getManager",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "T | null"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "this",
+                  "type": {
+                    "text": "{ new(): T; symbol: symbol }"
+                  }
+                },
+                {
+                  "name": "metadata",
+                  "type": {
+                    "text": "DecoratorMetadata |null | undefined"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "hooks",
+              "type": {
+                "text": "Record<PropertyKey, Set<Function>>"
+              },
+              "default": "{}"
+            },
+            {
+              "kind": "field",
+              "name": "instanceData",
+              "type": {
+                "text": "WeakMap<Composed<BaseType>, Data>"
+              },
+              "default": "new WeakMap()"
+            },
+            {
+              "kind": "method",
+              "name": "addHook",
+              "parameters": [
+                {
+                  "name": "methodName",
+                  "type": {
+                    "text": "K"
+                  }
+                },
+                {
+                  "name": "callback",
+                  "type": {
+                    "text": "HookMap<Composed<BaseType>>[K]"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getHooks",
+              "return": {
+                "type": {
+                  "text": "Set<Function>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "methodName",
+                  "type": {
+                    "text": "PropertyKey"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "addInstanceData",
+              "parameters": [
+                {
+                  "name": "instance",
+                  "type": {
+                    "text": "Composed<BaseType>"
+                  }
+                },
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "Data"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getInstanceData",
+              "return": {
+                "type": {
+                  "text": "Data | undefined"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "instance",
+                  "type": {
+                    "text": "Composed<BaseType>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "collectHooks",
+              "privacy": "private",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "metadata",
+                  "type": {
+                    "text": "DecoratorMetadata"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "applyHooks",
+              "privacy": "private",
+              "static": true,
+              "parameters": [
+                {
+                  "name": "prototype",
+                  "type": {
+                    "text": "any"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "compose",
+              "static": true,
+              "return": {
+                "type": {
+                  "text": "T & { [Symbol.metadata]: DecoratorMetadataObject }"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "value",
+                  "type": {
+                    "text": "T"
+                  }
+                },
+                {
+                  "name": "context",
+                  "type": {
+                    "text": "ClassDecoratorContext<T>"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "compose",
+          "parameters": [
+            {
+              "name": "tagName",
+              "optional": true,
+              "type": {
+                "text": "string"
+              },
+              "description": "Optional custom element tag name. If set, target class should extend `HTMLElement`."
+            }
+          ],
+          "description": "Enables composed hooks and metadata on a class.\nActs as the glue for this decorator system: other decorators register hooks/metadata,\nand `@compose` collects those hooks, wires lifecycle wrappers, runs finalize hooks,\nand provides `Symbol.metadata` so registries can resolve their per-class managers."
+        },
+        {
+          "kind": "variable",
+          "name": "DecoratedClass"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ComposedDecoratorManager",
+          "declaration": {
+            "name": "ComposedDecoratorManager",
+            "module": "core/decorators/compose.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "compose",
+          "declaration": {
+            "name": "compose",
+            "module": "core/decorators/compose.ts"
+          }
+        },
+        {
+          "kind": "custom-element-definition",
+          "name": "tagName",
+          "declaration": {
+            "name": "DecoratedClass",
+            "module": "core/decorators/compose.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/event.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "event",
+          "return": {
+            "type": {
+              "text": "<T extends Composed<HTMLElement>, V extends (this: T, event: GlobalEventHandlersEventMap[K], selectedTarget?: any) => any>(\n    value: V,\n    context: ClassMethodDecoratorContext<T, V>\n) => void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "eventName",
+              "type": {
+                "text": "K"
+              },
+              "description": "Event type string. Known DOM names infer the handler event type; unknown strings fall back to `Event`."
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": {
+                "text": "EventDecoratorOptions<Composed<HTMLElement>>"
+              },
+              "description": "Listener options."
+            },
+            {
+              "description": "Resolver for listener target. Default: host element.",
+              "name": "options.target"
+            },
+            {
+              "description": "Delegation selector; when matched, handler receives `selectedTarget` as second argument.",
+              "name": "options.selector"
+            },
+            {
+              "description": "Native listener options passed to `addEventListener`.",
+              "name": "options.options"
+            }
+          ],
+          "description": "Binds a DOM event handler to a method."
+        },
+        {
+          "kind": "function",
+          "name": "event",
+          "return": {
+            "type": {
+              "text": "<T extends Composed<HTMLElement>, V extends (this: T, event: Event, selectedTarget?: any) => any>(\n    value: V,\n    context: ClassMethodDecoratorContext<T, V>\n) => void"
+            }
+          },
+          "parameters": [
+            {
+              "name": "eventName",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": {
+                "text": "EventDecoratorOptions<Composed<HTMLElement>>"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "event",
+          "parameters": [
+            {
+              "name": "eventName",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": {
+                "text": "EventDecoratorOptions<T>"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "event",
+          "declaration": {
+            "name": "event",
+            "module": "core/decorators/event.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "event",
+          "declaration": {
+            "name": "event",
+            "module": "core/decorators/event.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "event",
+          "declaration": {
+            "name": "event",
+            "module": "core/decorators/event.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/index.ts",
+      "declarations": [],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "compose",
+          "declaration": {
+            "name": "compose",
+            "module": "./compose"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "reflect",
+          "declaration": {
+            "name": "reflect",
+            "module": "./reflect"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "watcher",
+          "declaration": {
+            "name": "watcher",
+            "module": "./reflect"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "Mappers",
+          "declaration": {
+            "name": "Mappers",
+            "module": "./reflect"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "event",
+          "declaration": {
+            "name": "event",
+            "module": "./event"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "debounce",
+          "declaration": {
+            "name": "debounce",
+            "module": "./batch"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "throttle",
+          "declaration": {
+            "name": "throttle",
+            "module": "./batch"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "query",
+          "declaration": {
+            "name": "query",
+            "module": "./query"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "queryAll",
+          "declaration": {
+            "name": "queryAll",
+            "module": "./query"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "clearQueryCache",
+          "declaration": {
+            "name": "clearQueryCache",
+            "module": "./query"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "shadowRoot",
+          "declaration": {
+            "name": "shadowRoot",
+            "module": "./shadow"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "shadowStyle",
+          "declaration": {
+            "name": "shadowStyle",
+            "module": "./shadow"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "slotted",
+          "declaration": {
+            "name": "slotted",
+            "module": "./slotted"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/query.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "query",
+          "parameters": [
+            {
+              "name": "selector",
+              "type": {
+                "text": "string"
+              },
+              "description": "CSS selector."
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": {
+                "text": "QueryDecoratorOptions"
+              },
+              "description": "Query behavior options."
+            },
+            {
+              "description": "If `true` (default), query shadow root first; else query host.",
+              "name": "options.shadow"
+            },
+            {
+              "description": "If `true` (default), cache resolved value.",
+              "name": "options.cache"
+            },
+            {
+              "description": "If `true`, throw when query returns no element.",
+              "name": "options.required"
+            }
+          ],
+          "description": "Resolves one element with `querySelector` for an accessor."
+        },
+        {
+          "kind": "function",
+          "name": "queryAll",
+          "parameters": [
+            {
+              "name": "selector",
+              "type": {
+                "text": "string"
+              },
+              "description": "CSS selector."
+            },
+            {
+              "name": "options",
+              "optional": true,
+              "type": {
+                "text": "QueryDecoratorOptions"
+              },
+              "description": "Query behavior options."
+            },
+            {
+              "description": "If `true` (default), query shadow root first; else query host.",
+              "name": "options.shadow"
+            },
+            {
+              "description": "If `true` (default), cache resolved value.",
+              "name": "options.cache"
+            },
+            {
+              "description": "Accepted for API symmetry; does not affect empty NodeList behavior.",
+              "name": "options.required"
+            }
+          ],
+          "description": "Resolves many elements with `querySelectorAll` for an accessor."
+        },
+        {
+          "kind": "function",
+          "name": "clearQueryCache",
+          "parameters": [
+            {
+              "name": "element",
+              "type": {
+                "text": "Composed<HTMLElement>"
+              },
+              "description": "The element to clear caches for"
+            }
+          ],
+          "description": "Clears query caches for an element (useful after DOM changes)."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "query",
+          "declaration": {
+            "name": "query",
+            "module": "core/decorators/query.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "queryAll",
+          "declaration": {
+            "name": "queryAll",
+            "module": "core/decorators/query.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "clearQueryCache",
+          "declaration": {
+            "name": "clearQueryCache",
+            "module": "core/decorators/query.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/reflect.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "Mappers",
+          "type": {
+            "text": "object"
+          },
+          "default": "{ Number: { toAttribute: (value: number) => value?.toString() ?? null, fromAttribute: (value: string | null) => value !== null ? Number(value) : null } as Mapper<number>, Boolean: { toAttribute: (value: boolean) => value ? '' : null, fromAttribute: (value: string | null) => value !== null && value !== 'false' } as Mapper<boolean>, String: { toAttribute: (value: string) => value ?? null, fromAttribute: (value: string | null) => value } as Mapper<string>, JSON: { toAttribute: (value: unknown) => value !== null && value !== undefined ? JSON.stringify(value) : null, fromAttribute: (value: string | null) => { try { return value !== null ? JSON.parse(value) : null; } catch { return null; } } } as Mapper<unknown>, BiMap: <T>(map: Map<T, string>): Mapper<T> => { const inverseMap = new Map<string, T>(); for (const [key, val] of map.entries()) { inverseMap.set(val, key); } return { toAttribute: (value: T) => map.get(value) ?? null, fromAttribute: (value: string | null) => value !== null && inverseMap.has(value) ? inverseMap.get(value)! : (null as unknown as T) }; } }"
+        },
+        {
+          "kind": "function",
+          "name": "reflect",
+          "parameters": [
+            {
+              "name": "attrName",
+              "optional": true,
+              "type": {
+                "text": "string"
+              },
+              "description": "Attribute name. Defaults to the accessor name."
+            },
+            {
+              "name": "mapper",
+              "optional": true,
+              "type": {
+                "text": "Mapper<any>"
+              },
+              "description": "Optional value mapper with `toAttribute` / `fromAttribute`."
+            }
+          ],
+          "description": "Syncs an accessor property (JS side) with an HTML attribute."
+        },
+        {
+          "kind": "function",
+          "name": "watcher",
+          "parameters": [
+            {
+              "name": "attrName",
+              "type": {
+                "text": "string"
+              },
+              "description": "The reflected attribute name to watch."
+            },
+            {
+              "name": "{ after = false }",
+              "default": "{}"
+            },
+            {
+              "description": "If `false` (default), watcher runs before assignment and may return a replacement value. If `true`, runs after assignment and return value is ignored.",
+              "name": "after"
+            }
+          ],
+          "description": "Watches changes for a reflected attribute."
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "Mappers",
+          "declaration": {
+            "name": "Mappers",
+            "module": "core/decorators/reflect.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "reflect",
+          "declaration": {
+            "name": "reflect",
+            "module": "core/decorators/reflect.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "watcher",
+          "declaration": {
+            "name": "watcher",
+            "module": "core/decorators/reflect.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/shadow.ts",
+      "declarations": [
+        {
+          "kind": "variable",
+          "name": "shadowRoot"
+        },
+        {
+          "kind": "function",
+          "name": "shadowRoot",
+          "parameters": [
+            {
+              "name": "shadowRootInit",
+              "default": "{ mode: \"open\" }",
+              "type": {
+                "text": "ShadowRootInit"
+              }
+            }
+          ],
+          "description": "Initializes component shadow root from an accessor value.\nWorks regardless of initializer order with"
+        },
+        {
+          "kind": "function",
+          "name": "shadowStyle",
+          "description": "Registers CSS text from an accessor and applies it when/if shadow root exists.\nWorks regardless of initializer order with"
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "shadowRoot",
+          "declaration": {
+            "name": "shadowRoot",
+            "module": "core/decorators/shadow.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "shadowStyle",
+          "declaration": {
+            "name": "shadowStyle",
+            "module": "core/decorators/shadow.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/decorators/slotted.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "slotted",
+          "return": {
+            "type": {
+              "text": "(target: any, context: ClassAccessorDecoratorContext) => any"
+            }
+          },
+          "parameters": [
+            {
+              "name": "slotName",
+              "type": {
+                "text": "string"
+              },
+              "description": "Slot name in shadow DOM. Use `\"\"` for default slot."
+            },
+            {
+              "name": "selector",
+              "optional": true,
+              "type": {
+                "text": "string"
+              },
+              "description": "Optional CSS selector filter applied to assigned elements."
+            },
+            {
+              "name": "single",
+              "optional": true,
+              "type": {
+                "text": "false"
+              },
+              "description": "If `true`, getter returns first match or `null`; otherwise returns all matches."
+            }
+          ],
+          "description": "Reads assigned elements from a shadow slot."
+        },
+        {
+          "kind": "function",
+          "name": "slotted",
+          "return": {
+            "type": {
+              "text": "(target: any, context: ClassAccessorDecoratorContext) => any"
+            }
+          },
+          "parameters": [
+            {
+              "name": "slotName",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "selector",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "single",
+              "type": {
+                "text": "true"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "slotted",
+          "parameters": [
+            {
+              "name": "slotName",
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "selector",
+              "optional": true,
+              "type": {
+                "text": "string"
+              }
+            },
+            {
+              "name": "single",
+              "default": "false"
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "slotted",
+          "declaration": {
+            "name": "slotted",
+            "module": "core/decorators/slotted.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "slotted",
+          "declaration": {
+            "name": "slotted",
+            "module": "core/decorators/slotted.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "slotted",
+          "declaration": {
+            "name": "slotted",
+            "module": "core/decorators/slotted.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/util/arrayProxy.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "createObservableArray",
+          "return": {
+            "type": {
+              "text": "T[]"
+            }
+          },
+          "parameters": [
+            {
+              "name": "array",
+              "type": {
+                "text": "T[]"
+              }
+            },
+            {
+              "name": "delegate",
+              "type": {
+                "text": "ArrayDelegate"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "createObservableArray",
+          "declaration": {
+            "name": "createObservableArray",
+            "module": "core/util/arrayProxy.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/util/customDrag.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "customDrag",
+          "parameters": [
+            {
+              "name": "target",
+              "description": "The element to attach drag events to.",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "name": "{\n\tonstart = ev => true,\n\tonmove = (ev, deltaX, deltaY) => true,\n\tonend = ev => true\n}"
+            },
+            {
+              "description": "Configuration object for drag callbacks.",
+              "name": "options",
+              "type": {
+                "text": "@param {Function} [options.onstart] - Called when drag starts. Receives the pointer event. Return false to cancel drag.\n * @param {Function} [options.onmove] - Called during dragging. Receives the pointer event, deltaX, and deltaY.\n * @param {Function} [options.onend] - Called when drag ends. Receives the pointer event.\n * "
+              }
+            }
+          ],
+          "description": "Adds custom drag behavior to a target element.",
+          "return": {
+            "type": {
+              "text": "Function"
+            }
+          }
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "customDrag",
+            "module": "core/util/customDrag.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/util/getOrCompute.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "getOrCompute",
+          "return": {
+            "type": {
+              "text": "V"
+            }
+          },
+          "parameters": [
+            {
+              "name": "map",
+              "type": {
+                "text": "WeakMap<K, V>"
+              }
+            },
+            {
+              "name": "key",
+              "type": {
+                "text": "K"
+              }
+            },
+            {
+              "name": "compute",
+              "type": {
+                "text": "() => V"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "getOrCompute",
+          "return": {
+            "type": {
+              "text": "V"
+            }
+          },
+          "parameters": [
+            {
+              "name": "map",
+              "type": {
+                "text": "Map<K, V>"
+              }
+            },
+            {
+              "name": "key",
+              "type": {
+                "text": "K"
+              }
+            },
+            {
+              "name": "compute",
+              "type": {
+                "text": "() => V"
+              }
+            }
+          ]
+        },
+        {
+          "kind": "function",
+          "name": "getOrCompute",
+          "return": {
+            "type": {
+              "text": "any"
+            }
+          },
+          "parameters": [
+            {
+              "name": "map",
+              "type": {
+                "text": "Map<any, any> | WeakMap<any, any>"
+              }
+            },
+            {
+              "name": "key",
+              "type": {
+                "text": "any"
+              }
+            },
+            {
+              "name": "compute",
+              "type": {
+                "text": "() => any"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "getOrCompute",
+            "module": "core/util/getOrCompute.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "getOrCompute",
+            "module": "core/util/getOrCompute.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "default",
+          "declaration": {
+            "name": "getOrCompute",
+            "module": "core/util/getOrCompute.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/util/styleSheet.ts",
+      "declarations": [
+        {
+          "kind": "function",
+          "name": "styleSheet",
+          "return": {
+            "type": {
+              "text": "CSSStyleSheet"
+            }
+          },
+          "parameters": [
+            {
+              "name": "css",
+              "type": {
+                "text": "string"
+              }
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "styleSheet",
+          "declaration": {
+            "name": "styleSheet",
+            "module": "core/util/styleSheet.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/infinite-canvas/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "InfiniteCanvas",
+          "members": [
+            {
+              "kind": "field",
+              "name": "committedX",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "field",
+              "name": "committedY",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "field",
+              "name": "committedScale",
+              "type": {
+                "text": "number"
+              },
+              "default": "1"
+            },
+            {
+              "kind": "field",
+              "name": "x",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "y",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "scale",
+              "readonly": true
+            },
+            {
+              "kind": "field",
+              "name": "canvas",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "matrix",
+              "privacy": "protected",
+              "default": "new DOMMatrix()"
+            },
+            {
+              "kind": "field",
+              "name": "inverseMatrix",
+              "privacy": "protected",
+              "default": "new DOMMatrix()"
+            },
+            {
+              "kind": "field",
+              "name": "interacting",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "protected",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "root",
+              "type": {
+                "text": "string"
+              },
+              "default": "` <div part=\"canvas\"><slot></slot></div> `"
+            },
+            {
+              "kind": "field",
+              "name": "rootStyle",
+              "type": {
+                "text": "string"
+              },
+              "default": "` :host { display: block; position: relative; overflow: hidden; touch-action: none; /* Prevents browser scroll while panning */ } [part=\"canvas\"] { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; } `"
+            },
+            {
+              "kind": "method",
+              "name": "onViewChange"
+            },
+            {
+              "kind": "method",
+              "name": "pan",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "dx",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "dy",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "Pan the canvas by a screen-pixel delta."
+            },
+            {
+              "kind": "method",
+              "name": "zoom",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "delta",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "originX",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "originY",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ],
+              "description": "Zoom by a scale factor around a point in host-local coordinates."
+            },
+            {
+              "kind": "method",
+              "name": "onWheel",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "WheelEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "commitOnWheelEnd",
+              "privacy": "protected"
+            },
+            {
+              "kind": "method",
+              "name": "onPointerDown",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onPointerMove",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onPointerEnd",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "commitMatrix",
+              "privacy": "protected"
+            },
+            {
+              "kind": "method",
+              "name": "render",
+              "privacy": "protected"
+            },
+            {
+              "kind": "method",
+              "name": "project",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "point",
+                  "type": {
+                    "text": "DOMPoint"
+                  }
+                }
+              ],
+              "description": "Converts Screen coordinates (clientX/Y) to Canvas Space coordinates\nReturn a new DOMPoint with the transformed coordinates"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "InfiniteCanvas",
+          "declaration": {
+            "name": "InfiniteCanvas",
+            "module": "core/components/infinite-canvas/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/list-view/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "ListView web component.",
+          "name": "ListView",
+          "slots": [
+            {
+              "description": "Custom template for list items.",
+              "name": "template"
+            },
+            {
+              "description": "Default slot for fallback content.",
+              "name": "default"
+            }
+          ],
+          "members": [
+            {
+              "kind": "method",
+              "name": "getInstanceId",
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getListData",
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "size",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "field",
+              "name": "start",
+              "type": {
+                "text": "number"
+              },
+              "default": "0"
+            },
+            {
+              "kind": "field",
+              "name": "generator",
+              "type": {
+                "text": "DataGenerator | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "templategenerator",
+              "type": {
+                "text": "TemplateGenerator"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "listMode",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "true"
+            },
+            {
+              "kind": "field",
+              "name": "indexToNode",
+              "privacy": "private",
+              "default": "new Map<number, HTMLElement>()"
+            },
+            {
+              "kind": "field",
+              "name": "nodePool",
+              "privacy": "private",
+              "default": "new Set<HTMLElement>()"
+            },
+            {
+              "kind": "field",
+              "name": "listRefrence",
+              "type": {
+                "text": "any[] | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "listProxy",
+              "type": {
+                "text": "any[] | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "templateSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "defaultSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "onTemplateSlotChange"
+            },
+            {
+              "kind": "field",
+              "name": "root",
+              "type": {
+                "text": "string"
+              },
+              "default": "` <slot name=\"template\"> <template-generator id=\"dafault-generator\" template=\"list-view:list-identity\"><template-generator> </slot> <slot></slot> `"
+            },
+            {
+              "kind": "field",
+              "name": "rootStyle",
+              "type": {
+                "text": "string"
+              },
+              "default": "` ::slotted([hidden]) { display: none !important; } `"
+            },
+            {
+              "kind": "field",
+              "name": "list"
+            },
+            {
+              "kind": "method",
+              "name": "onBeforeSizeChange",
+              "parameters": [
+                {
+                  "name": "oldSize"
+                },
+                {
+                  "name": "newSize"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "resize",
+              "parameters": [
+                {
+                  "name": "oldSize"
+                },
+                {
+                  "name": "newSize",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "changeStart",
+              "parameters": [
+                {
+                  "name": "oldStart"
+                },
+                {
+                  "name": "newStart"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "shouldBeVisibleIndexs"
+            },
+            {
+              "kind": "method",
+              "name": "isVizible",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getNode",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "data",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "decorateInstance",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "placeNode",
+              "privacy": "protected",
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "Node"
+                  }
+                },
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "stashNode",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "node",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getDataSize"
+            },
+            {
+              "kind": "method",
+              "name": "shiftIndexToNodes",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "afterIndex",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "shift",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onUpdate",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onSplice",
+              "parameters": [
+                {
+                  "name": "start",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "deleteCount",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "addCount",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onRemove",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "count",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onAdd",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "count",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "render"
+            },
+            {
+              "kind": "method",
+              "name": "clear"
+            },
+            {
+              "kind": "method",
+              "name": "refresh",
+              "parameters": [
+                {
+                  "name": "start",
+                  "default": "this.start"
+                },
+                {
+                  "name": "size",
+                  "default": "this.size"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "refreshItem",
+              "parameters": [
+                {
+                  "name": "index",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "swap",
+              "parameters": [
+                {
+                  "name": "index1",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "index2",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "animate",
+                  "default": "false"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "swapAnimation",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "node1",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "node2",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "field",
+              "name": "role",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"list\""
+            }
+          ],
+          "events": [
+            {
+              "description": "Fired when the template slot changes.",
+              "name": "slotchange"
+            }
+          ],
+          "attributes": [
+            {
+              "description": "Number of items to display.",
+              "name": "size"
+            },
+            {
+              "description": "Start index for the list.",
+              "name": "start"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "list-view",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ListView",
+          "declaration": {
+            "name": "ListView",
+            "module": "core/components/list-view/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/list-window/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "ListWindow",
+          "members": [
+            {
+              "kind": "field",
+              "name": "root",
+              "type": {
+                "text": "string"
+              },
+              "default": "` <div id=\"spacer\"></div> <div id=\"container\"></div> `"
+            },
+            {
+              "kind": "field",
+              "name": "rootStyle",
+              "type": {
+                "text": "string"
+              },
+              "default": "` :host { display: block; height: 400px; overflow-y: auto; border: 1px solid #ccc; } .spacer { width: 1px; } .item { height: var(--item-height, 60px); display: flex; align-items: center; justify-content: center; border-bottom: 1px solid #eee; } `"
+            },
+            {
+              "kind": "field",
+              "name": "spacer",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "default": "null!"
+            },
+            {
+              "kind": "field",
+              "name": "container",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "default": "null!"
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "ListWindow",
+          "declaration": {
+            "name": "ListWindow",
+            "module": "core/components/list-window/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/size-modifier/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "SizeModifier",
+          "members": [
+            {
+              "kind": "field",
+              "name": "direction",
+              "type": {
+                "text": "\"row\" | \"column\""
+              },
+              "default": "\"row\""
+            },
+            {
+              "kind": "field",
+              "name": "updates",
+              "type": {
+                "text": "\"width\" | \"height\" | \"flex-basis\""
+              },
+              "default": "\"flex-basis\""
+            },
+            {
+              "kind": "field",
+              "name": "cascade",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "true",
+              "description": "\"cascade\" pushes all siblings, \"neighbor\" only affects immediate two"
+            },
+            {
+              "kind": "field",
+              "name": "active",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "prevSiblings",
+              "type": {
+                "text": "ElementSizeData[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "nextSiblings",
+              "type": {
+                "text": "ElementSizeData[]"
+              },
+              "privacy": "private",
+              "default": "[]"
+            },
+            {
+              "kind": "field",
+              "name": "internals",
+              "type": {
+                "text": "ElementInternals"
+              },
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "root",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"<!-- size-modifier-shadow-root -->\""
+            },
+            {
+              "kind": "field",
+              "name": "rootStyle",
+              "type": {
+                "text": "string"
+              },
+              "default": "` :host { display: block; flex: 0 0 6px; user-select: none; --webkit-user-drag: none; } :host([direction=\"row\"]) { width: 6px; height: 100%; cursor: ew-resize; min-width: 6px; max-width: 6px; } :host([direction=\"column\"]) { width: 100%; height: 6px; cursor: ns-resize; min-height: 6px; max-height: 6px; } `"
+            },
+            {
+              "kind": "method",
+              "name": "updateDirection",
+              "parameters": [
+                {
+                  "name": "_old",
+                  "type": {
+                    "text": "string | null"
+                  }
+                },
+                {
+                  "name": "newVal",
+                  "type": {
+                    "text": "string | null"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "updateActiveState",
+              "parameters": [
+                {
+                  "name": "_old",
+                  "type": {
+                    "text": "boolean"
+                  }
+                },
+                {
+                  "name": "newVal",
+                  "type": {
+                    "text": "boolean"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onPointerDown",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onPointerMove",
+              "parameters": [
+                {
+                  "name": "ev",
+                  "type": {
+                    "text": "PointerEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onPointerUp"
+            },
+            {
+              "kind": "method",
+              "name": "cascadeSizeChange",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "delta",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "parentFreeSpace",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "number"
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getConsumedDelta",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "datas",
+                  "type": {
+                    "text": "ElementSizeData[]"
+                  }
+                },
+                {
+                  "name": "delta",
+                  "type": {
+                    "text": "number"
+                  }
+                },
+                {
+                  "name": "apply",
+                  "default": "false"
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "updateElement",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "any"
+                  }
+                },
+                {
+                  "name": "newSize",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "probeSiblings",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "applyParentContext",
+              "privacy": "private"
+            },
+            {
+              "kind": "field",
+              "name": "role",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"separator\""
+            },
+            {
+              "kind": "field",
+              "name": "ariaOrientation",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"vertical\""
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "tagName": "size-modifier",
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "SizeModifier",
+          "declaration": {
+            "name": "SizeModifier",
+            "module": "core/components/size-modifier/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/tab-view/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "TabView",
+          "members": [
+            {
+              "kind": "field",
+              "name": "root",
+              "type": {
+                "text": "string"
+              },
+              "default": "` <slot name=\"header\"></slot> <div part=\"tabs\"> <slot name=\"tab\"></slot> </div> <slot></slot> `"
+            },
+            {
+              "kind": "field",
+              "name": "rootStyle",
+              "type": {
+                "text": "string"
+              },
+              "default": "``"
+            },
+            {
+              "kind": "field",
+              "name": "activeTab",
+              "type": {
+                "text": "string"
+              },
+              "default": "\"\""
+            },
+            {
+              "kind": "field",
+              "name": "headers",
+              "type": {
+                "text": "NodeListOf<Element>"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "tabSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "tabs",
+              "type": {
+                "text": "HTMLElement[]"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "activeTabHeader",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "activeTabContent",
+              "type": {
+                "text": "HTMLElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "headerContainer",
+              "type": {
+                "text": "HTMLElement | null"
+              }
+            },
+            {
+              "kind": "method",
+              "name": "getTheInput",
+              "parameters": [
+                {
+                  "name": "withFor",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onTabChange",
+              "parameters": [
+                {
+                  "name": "oldValue",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "newValue",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "chooseHeader",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "MouseEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "select",
+              "parameters": [
+                {
+                  "name": "tab",
+                  "type": {
+                    "text": "string | number | undefined | null"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "next",
+              "parameters": [
+                {
+                  "name": "offset",
+                  "default": "1",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "previous",
+              "parameters": [
+                {
+                  "name": "offset",
+                  "default": "1",
+                  "type": {
+                    "text": "number"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getActiveIndex"
+            },
+            {
+              "kind": "method",
+              "name": "getPair",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "pairs"
+            },
+            {
+              "kind": "method",
+              "name": "handleKeydown",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "KeyboardEvent"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onTabSlotChange",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onInput",
+              "parameters": [
+                {
+                  "name": "e",
+                  "type": {
+                    "text": "Event"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "_syncAria",
+              "privacy": "private"
+            }
+          ],
+          "events": [
+            {
+              "name": "tab-change",
+              "type": {
+                "text": "CustomEvent"
+              }
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TabView",
+          "declaration": {
+            "name": "TabView",
+            "module": "core/components/tab-view/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/template-generator/index.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "TemplateGenerator",
+          "members": [
+            {
+              "kind": "field",
+              "name": "registry",
+              "static": true,
+              "default": "new TemplateRegistry()"
+            },
+            {
+              "kind": "field",
+              "name": "commentDescriptor",
+              "static": true,
+              "default": "new TemplateDescriptor<Node>({ template() { return document.createComment(\"Loading...\"); } })"
+            },
+            {
+              "kind": "field",
+              "name": "template",
+              "type": {
+                "text": "string | null"
+              },
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "placement",
+              "type": {
+                "text": "\"shadow\" | \"childlist\" | \"before\" | \"after\""
+              },
+              "default": "\"childlist\""
+            },
+            {
+              "kind": "field",
+              "name": "replace",
+              "type": {
+                "text": "boolean"
+              },
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "defaultSlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "lazySlot",
+              "type": {
+                "text": "HTMLSlotElement"
+              }
+            },
+            {
+              "kind": "field",
+              "name": "_data",
+              "type": {
+                "text": "any"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "lastDescriptor",
+              "type": {
+                "text": "TemplateDescriptor | null"
+              },
+              "privacy": "private",
+              "default": "null"
+            },
+            {
+              "kind": "field",
+              "name": "descriptorOutdated",
+              "type": {
+                "text": "boolean"
+              },
+              "privacy": "private",
+              "default": "false"
+            },
+            {
+              "kind": "field",
+              "name": "lazyDescriptor",
+              "type": {
+                "text": "TemplateDescriptor"
+              },
+              "privacy": "public",
+              "description": "Descriptor used for lazy rendering while waiting for data resolution or template fetching."
+            },
+            {
+              "kind": "field",
+              "name": "descriptor",
+              "type": {
+                "text": "TemplateDescriptor<any, any> | null"
+              },
+              "privacy": "public",
+              "default": "null",
+              "description": "The descriptor of the currently rendered template, if any."
+            },
+            {
+              "kind": "field",
+              "name": "instance",
+              "type": {
+                "text": "Node | null"
+              },
+              "privacy": "public",
+              "default": "null",
+              "description": "Internally managed instance for hydration porpose and long time tracking."
+            },
+            {
+              "kind": "field",
+              "name": "anchor",
+              "type": {
+                "text": "HTMLElement"
+              },
+              "privacy": "public",
+              "default": "this",
+              "description": "The ralative anchor used for placement. Defaults to the component itself, but can be set to any other element"
+            },
+            {
+              "kind": "field",
+              "name": "root",
+              "default": "` <slot></slot> <slot name=\"lazy\"></slot> `"
+            },
+            {
+              "kind": "field",
+              "name": "shadowStyle",
+              "default": "` :host(:not([placement=\"shadow\"]):not([placement=\"childlist\"])) { display: none !important; } ::slotted([slot=\"lazy\"]) { display: none !important; } `"
+            },
+            {
+              "kind": "method",
+              "name": "onTemplateChangeAfter",
+              "parameters": [
+                {
+                  "name": "_old",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "newVal",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "onSlotChange"
+            },
+            {
+              "kind": "method",
+              "name": "onTemplateChange",
+              "privacy": "private"
+            },
+            {
+              "kind": "method",
+              "name": "onLazySlotChange"
+            },
+            {
+              "kind": "method",
+              "name": "placeElement",
+              "privacy": "private",
+              "parameters": [
+                {
+                  "name": "element",
+                  "type": {
+                    "text": "Node"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "fetchDescriptor",
+              "privacy": "private",
+              "return": {
+                "type": {
+                  "text": "TemplateDescriptor | Promise<TemplateDescriptor | undefined> | undefined"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "spawn",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "any"
+                  }
+                }
+              ],
+              "description": "Creates an instance of the current template with the provided data, without placing it in the DOM.",
+              "return": {
+                "type": {
+                  "text": ""
+                }
+              }
+            },
+            {
+              "kind": "method",
+              "name": "spawnAndPlace",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "any"
+                  }
+                },
+                {
+                  "name": "anchor",
+                  "default": "this.anchor",
+                  "type": {
+                    "text": "HTMLElement"
+                  }
+                },
+                {
+                  "name": "replace",
+                  "default": "null",
+                  "type": {
+                    "text": "Node | null"
+                  }
+                }
+              ],
+              "description": "Creates an instance of the current template with the provided data, and places it in the DOM according to the \"placement\" property.   \nIf an anchor element is provided, it will be used as the reference for placement instead of the default anchor.  \nIf a replace node is provided, the new instance will replace it in the DOM instead of being placed according to the \"placement\" property."
+            },
+            {
+              "kind": "method",
+              "name": "hydrate",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "any"
+                  }
+                },
+                {
+                  "name": "element",
+                  "default": "this.instance",
+                  "type": {
+                    "text": "Node | undefined | null"
+                  }
+                }
+              ],
+              "description": "Hydrates the provided element (or the internally managed instance if no element is provided) with the provided data using the current descriptor."
+            },
+            {
+              "kind": "method",
+              "name": "instantiate",
+              "privacy": "public",
+              "parameters": [
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "any"
+                  }
+                }
+              ],
+              "description": "Creates an internally managed instance of the current template with the provided data,\nreplacing any existing instance if the \"replace\" flag is set or an instance already exists.\nThe instance is placed according to the \"placement\" property."
+            },
+            {
+              "kind": "method",
+              "name": "destroy",
+              "privacy": "public",
+              "description": "Removes and cleans up the internally managed instance using the current descriptor's cleanup method."
+            }
+          ],
+          "superclass": {
+            "name": "HTMLElement"
+          },
+          "customElement": true
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TemplateGenerator",
+          "declaration": {
+            "name": "TemplateGenerator",
+            "module": "core/components/template-generator/index.ts"
+          }
+        }
+      ]
+    },
+    {
+      "kind": "javascript-module",
+      "path": "core/components/template-generator/templateDescriptor.ts",
+      "declarations": [
+        {
+          "kind": "class",
+          "description": "",
+          "name": "TemplateDescriptor",
+          "members": [
+            {
+              "kind": "field",
+              "name": "templateFn",
+              "type": {
+                "text": "TemplateDescriptorLike<T, D>[\"template\"]"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "field",
+              "name": "hydrateFn",
+              "type": {
+                "text": "TemplateDescriptorLike<T, D>[\"hydrate\"]"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "field",
+              "name": "cleanupFn",
+              "type": {
+                "text": "TemplateDescriptorLike<T, D>[\"cleanup\"]"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "field",
+              "name": "defaultData",
+              "type": {
+                "text": "TemplateDescriptorLike<T, D>[\"defaultData\"]"
+              },
+              "privacy": "public"
+            },
+            {
+              "kind": "method",
+              "name": "update",
+              "parameters": [
+                {
+                  "name": "patch",
+                  "type": {
+                    "text": "Partial<TemplateDescriptorLike<T, D>>"
+                  }
+                }
+              ],
+              "description": "Updates logic without breaking object references.\nEssential for late-binding (HTML provides template, JS provides logic)."
+            },
+            {
+              "kind": "method",
+              "name": "instantiate",
+              "return": {
+                "type": {
+                  "text": "T | undefined"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "data",
+                  "optional": true,
+                  "type": {
+                    "text": "D"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "hydrate",
+              "parameters": [
+                {
+                  "name": "instance",
+                  "type": {
+                    "text": "T"
+                  }
+                },
+                {
+                  "name": "data",
+                  "type": {
+                    "text": "D | undefined"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "destroy",
+              "parameters": [
+                {
+                  "name": "instance",
+                  "type": {
+                    "text": "T"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "class",
+          "description": "",
+          "name": "TemplateRegistry",
+          "members": [
+            {
+              "kind": "field",
+              "name": "loadTimeout",
+              "type": {
+                "text": "number"
+              },
+              "privacy": "public",
+              "readonly": true,
+              "default": "5000"
+            },
+            {
+              "kind": "field",
+              "name": "descriptors",
+              "privacy": "private",
+              "default": "new Map<string, TemplateDescriptor<any, any>>()"
+            },
+            {
+              "kind": "field",
+              "name": "pendingDescriptors",
+              "privacy": "private",
+              "default": "new Map<string, ReturnType<typeof Promise.withResolvers<TemplateDescriptor<any, any>>>>()"
+            },
+            {
+              "kind": "method",
+              "name": "define",
+              "return": {
+                "type": {
+                  "text": "TemplateDescriptor<T, D>"
+                }
+              },
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "logic",
+                  "type": {
+                    "text": "Partial<TemplateDescriptorLike<T, D>>"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "get",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "getAsync",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "kind": "method",
+              "name": "registerElement",
+              "parameters": [
+                {
+                  "name": "name",
+                  "type": {
+                    "text": "string"
+                  }
+                },
+                {
+                  "name": "element",
+                  "type": {
+                    "text": "HTMLTemplateElement"
+                  }
+                }
+              ],
+              "description": "Maps an actual HTMLTemplateElement to a registry binding key."
+            }
+          ]
+        }
+      ],
+      "exports": [
+        {
+          "kind": "js",
+          "name": "TemplateDescriptor",
+          "declaration": {
+            "name": "TemplateDescriptor",
+            "module": "core/components/template-generator/templateDescriptor.ts"
+          }
+        },
+        {
+          "kind": "js",
+          "name": "TemplateRegistry",
+          "declaration": {
+            "name": "TemplateRegistry",
+            "module": "core/components/template-generator/templateDescriptor.ts"
+          }
+        }
+      ]
+    }
+  ]
+}

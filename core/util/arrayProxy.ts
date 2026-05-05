@@ -1,66 +1,74 @@
-type ArrayChangeHandler = (change: ArrayChange) => void;
-
-export interface ArrayChange {
-    type: 'add' | 'remove' | 'update' | 'splice';
-    index: number;
-    count?: number; // for splice/remove: how many items
+export interface ArrayDelegate {
+    onUpdate: (index: number) => void;
+    onAdd:    (index: number, count: number) => void;
+    onRemove: (index: number, count: number) => void;
+    onSplice: (index: number, removedCount: number, addedCount: number) => void;
 }
 
-export function createObservableArray<T>(
-    array: T[],
-    onChange: ArrayChangeHandler
-): T[] {
-    const proxy = new Proxy(array, {
-        set(target, prop: string | symbol, value) {
-            const index = parseInt(prop as string);
+export function createObservableArray<T>(array: T[], delegate: ArrayDelegate): T[] {
 
-            if (!isNaN(index)) {
-                target[index] = value;
-                onChange({ type: 'update', index });
-            } else {
-                target[prop] = value;
+    const methodTraps = {
+        push: (...items: T[]) => {
+            const oldLength = array.length;
+            const result = Array.prototype.push.apply(array, items);
+            delegate.onAdd(oldLength, items.length);
+            return result;
+        },
+        pop: () => {
+            const oldLength = array.length;
+            const result = Array.prototype.pop.apply(array);
+            if (result !== undefined) {
+                delegate.onRemove(oldLength - 1, 1);
             }
-            return true;
+            return result;
+        },
+        splice: (start: number, deleteCount: number, ...items: T[]) => {
+            const result = Array.prototype.splice.apply(array, [start, deleteCount, ...items]);
+            delegate.onSplice(start, deleteCount, items.length);
+            return result;
+        },
+        shift: () => {
+            const result = Array.prototype.shift.apply(array);
+            if (result !== undefined) {
+                delegate.onRemove(0, 1);
+            }
+            return result;
+        },
+        unshift: (...items: T[]) => {
+            const result = Array.prototype.unshift.apply(array, items);
+            delegate.onAdd(0, items.length);
+            return result;
+        }
+    }
+
+    return new Proxy(array, {
+        // 1. Intercept standard index sets (e.g., arr[0] = val)
+        set(target, prop, value, receiver) {
+            const index = Number(prop);
+            const isIndex = Number.isInteger(index) && index >= 0;
+            
+            // Perform the update
+            const success = Reflect.set(target, prop, value, receiver);
+            
+            // Only trigger delegate for index updates, ignoring 'length' etc.
+            if (success && isIndex) {
+                delegate.onUpdate(index);
+            }
+            return success;
+        },
+
+        // 2. Intercept method access (e.g., arr.push)
+        get(target, prop, receiver) {
+            const value = Reflect.get(target, prop, receiver);
+
+            // If it's a function (method), wrap it to handle custom logic
+            if (typeof value === 'function') {
+                const trap = methodTraps[prop as keyof typeof methodTraps];
+                if (trap) {
+                    return trap;
+                }
+            }
+            return value;
         }
     });
-
-    // Wrap mutation methods
-    const push = proxy.push;
-    proxy.push = function (...items: T[]) {
-        const index = this.length;
-        const result = push.apply(this, items);
-        onChange({ type: 'add', index, count: items.length });
-        return result;
-    };
-
-    const pop = proxy.pop;
-    proxy.pop = function () {
-        const index = this.length - 1;
-        const result = pop.call(this);
-        onChange({ type: 'remove', index, count: 1 });
-        return result;
-    };
-
-    const shift = proxy.shift;
-    proxy.shift = function () {
-        const result = shift.call(this);
-        onChange({ type: 'remove', index: 0, count: 1 });
-        return result;
-    };
-
-    const unshift = proxy.unshift;
-    proxy.unshift = function (...items: T[]) {
-        const result = unshift.apply(this, items);
-        onChange({ type: 'add', index: 0, count: items.length });
-        return result;
-    };
-
-    const splice = proxy.splice;
-    proxy.splice = function (start: number, deleteCount?: number, ...items: T[]) {
-        const result = splice.apply(this, [start, deleteCount, ...items]);
-        onChange({ type: 'splice', index: start, count: result.length });
-        return result;
-    };
-
-    return proxy;
 }

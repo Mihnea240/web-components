@@ -1,67 +1,263 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>List View Demo</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; }
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
 
         body {
             margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 24px;
-            font-family: sans-serif;
-            background: #f0f0f0;
+            min-height: 100vh;
+            padding: 28px;
+            font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(100, 116, 139, 0.2), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(14, 165, 233, 0.18), transparent 24%),
+                #eef2f7;
+            color: #132238;
         }
 
         .demo {
-            width: min(540px, 100%);
-            height: 100%;
+            width: min(1120px, 100%);
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .hero {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: end;
+            gap: 16px;
+            padding: 18px 20px;
+            border: 1px solid rgba(19, 34, 56, 0.08);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.76);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 18px 45px rgba(19, 34, 56, 0.08);
+        }
+
+        .hero h1 {
+            margin: 0;
+            font-size: clamp(22px, 3vw, 32px);
+            line-height: 1.05;
+        }
+
+        .hero p {
+            margin: 8px 0 0;
+            color: #4b5b70;
+            max-width: 70ch;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toolbar label {
+            font-size: 12px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: #516176;
+        }
+
+        select {
+            appearance: none;
+            border: 1px solid rgba(19, 34, 56, 0.15);
+            border-radius: 12px;
+            background: white;
+            color: #132238;
+            padding: 10px 12px;
+            font: inherit;
+        }
+
+        .panes {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .pane {
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding: 16px;
+            border-radius: 18px;
+            border: 1px solid rgba(19, 34, 56, 0.1);
+            background: rgba(255, 255, 255, 0.78);
+            box-shadow: 0 10px 28px rgba(19, 34, 56, 0.06);
         }
 
-        h2 {
+        .pane h2 {
             margin: 0;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 0.04em;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            color: #555;
+            color: #5d6d82;
         }
 
-        #list {
-            border: 1px solid #cfcfcf;
-            background: #fff;
-            border-radius: 6px;
-            overflow-y: auto;
-            height: 50%;
+        .pane p {
+            margin: 0;
+            color: #516176;
+            font-size: 14px;
         }
 
-        #list > div {
-            height: 44px;
-            padding: 0 12px;
+        list-view {
+            display: block;
+            height: 420px;
+            overflow: auto;
+            border-radius: 16px;
+            border: 1px solid rgba(19, 34, 56, 0.12);
+            background: rgba(248, 250, 252, 0.96);
+        }
+
+        list-view > div {
+            height: 52px;
+            padding: 0 14px;
             display: flex;
             align-items: center;
-            border-top: 1px solid #ececec;
+            gap: 10px;
+            border-top: 1px solid rgba(19, 34, 56, 0.08);
+            transition: all 400ms ease;
+
         }
 
-        #list > div:first-child {
+        list-view > div:first-child {
             border-top: none;
+        }
+
+        .demo-item {
+            width: 100%;
+            user-select: none;
+            cursor: grab;
+        }
+
+        .demo-item:active {
+            cursor: grabbing;
+        }
+
+        .circle {
+            width: 16px;
+            height: 16px;
+            border-radius: 999px;
+            background: linear-gradient(135deg, #0ea5e9, #2563eb);
+            box-shadow: 0 0 0 4px rgba(14, 165, 233, 0.12);
+            flex: none;
+        }
+
+        .title {
+            font-weight: 700;
+        }
+
+        .meta {
+            margin-left: auto;
+            color: #70839b;
+            font-size: 12px;
+        }
+
+        .drag-over {
+            background: rgba(14, 165, 233, 0.08);
+        }
+
+        .drag-before {
+            margin-top: 30px;
+            border-top: 2px solid #0ea5e9;
+        }
+        
+        .drag-after {
+            margin-bottom: 30px;
+            border-bottom: 2px solid #0ea5e9;
+        }
+
+        .dragging {
+            height: 0;
+            overflow: hidden;
+        }
+
+        .drag-reorder {
+            background: rgba(14, 165, 233, 0.12);
+        }
+
+        .drag-copy {
+            background: rgba(16, 185, 129, 0.12);
+        }
+
+        .drag-move {
+            background: rgba(249, 115, 22, 0.12);
+        }
+
+        .drag-locked {
+            background: rgba(148, 163, 184, 0.14);
+        }
+
+        #target-hint {
+            min-height: 2.4em;
+        }
+
+        @media (max-width: 860px) {
+            .panes {
+                grid-template-columns: 1fr;
+            }
+
+            list-view {
+                height: 320px;
+            }
         }
     </style>
 </head>
+
 <body>
     <section class="demo">
-        <h2>List View</h2>
-        <list-view id="list"></list-view>
+        <header class="hero">
+            <div>
+                <h1>List view drag strategies</h1>
+                <p>Drag from the source list into the target pane. Switch the target strategy to see reorder, copy, and reject behavior use the same drag payload API.</p>
+            </div>
+            <div class="toolbar">
+                <label for="target-mode">Target strategy</label>
+                <select id="target-mode">
+                    <option value="copy">Copy into target</option>
+                    <option value="move">Move into target</option>
+                    <option value="reorder">Reorder inside target</option>
+                    <option value="locked">Locked target</option>
+                </select>
+            </div>
+        </header>
+
+        <div class="panes">
+            <section class="pane">
+                <h2>Source list</h2>
+                <p>This list uses a reorder strategy, so dragging inside it changes the source array directly.</p>
+                <list-view id="source-list">
+                    <template-generator slot="template" template="list-view:custom-demo"></template-generator>
+                </list-view>
+            </section>
+
+            <section class="pane">
+                <h2>Target list</h2>
+                <p id="target-hint"></p>
+                <list-view id="target-list">
+                    <template-generator slot="template" template="list-view:custom-demo"></template-generator>
+                </list-view>
+            </section>
+        </div>
+
     </section>
     <script type="module" src="./main.ts"></script>
 
 </body>
+
 </html>
