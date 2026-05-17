@@ -7,6 +7,7 @@ import { shadowRoot, shadowStyle } from "@decorators/shadow";
 
 import { createObservableArray } from "@core/util/arrayProxy";
 import { TemplateGenerator } from "../template-generator";
+import { ListViewDragController } from "./drag_controller";
 import { DropStrategy } from "./drop_strategy";
 
 
@@ -16,32 +17,6 @@ TemplateGenerator.registry.define("list-view:list-identity", {
         node.textContent = String(data);
     }
 });
-
-type DragOverContext = {
-    target: HTMLElement;
-    index: number;
-    rect: DOMRect;
-    placement: "before" | "after";
-}
-
-function getDragOverContext(
-    target: HTMLElement,
-    clientX: number, clientY: number,
-    directionVertical = true,
-    previousContext: DragOverContext | null = null,
-): DragOverContext {
-    const rect = previousContext?.target === target ? previousContext.rect : target.getBoundingClientRect();
-    const pointerPosition = directionVertical ?
-        (clientY - rect.top) / rect.height :
-        (clientX - rect.left) / rect.width;
-    
-    return {
-        target,
-        index: Number(target.getAttribute("aria-posinset")),
-        rect,
-        placement: pointerPosition <= 0.5 ? "before" : "after"
-    };
-}
 
 export type DataGenerator = (index: number) => any;
 
@@ -58,9 +33,7 @@ export interface ListView extends Composed<HTMLElement> { }
  */
 @compose("list-view")
 export class ListView extends HTMLElement {
-    private static readonly DRAGGING_ITEM_CLASS = "dragging";
-
-    getInstanceId(node: HTMLElement) {
+    getInstanceId(node: HTMLElement): number | null {
         const index = Number(node.getAttribute("aria-posinset"))
         return index ? index - 1 : null;
     }
@@ -73,16 +46,15 @@ export class ListView extends HTMLElement {
     @reflect("size", Mappers.Number) accessor size = 0;
     @reflect("start", Mappers.Number) accessor start = 0;
     @reflect("dragging", Mappers.Boolean) accessor dragging = false;
+    @reflect("dropping", Mappers.Boolean) accessor dropping = false;
 
     generator: DataGenerator | null = null;
     templategenerator!: TemplateGenerator;
     dropStrategy: DropStrategy | null = null;
+    readonly dragHandler: ListViewDragController;
 
     private listMode = true;
     private indexToNode = new Map<number, HTMLElement>();
-    private dragOverContext: DragOverContext | null = null;
-    private draggedItem: HTMLElement | null = null;
-    private lastDropAccepted = false;
     private nodePool = new Set<HTMLElement>();
     private listRefrence: any[] | null = null;
     private listProxy: any[] | null = null;
@@ -119,8 +91,8 @@ export class ListView extends HTMLElement {
     constructor() {
         super();
         const internals = this.attachInternals();
-
         internals.role = "list";
+        this.dragHandler = new ListViewDragController(this);
     }
 
     set list(value: any[] | null | DataGenerator) {
@@ -328,213 +300,35 @@ export class ListView extends HTMLElement {
     }
 
     //Drag and drop
-    private setDragCue(target: Element | null, placement: "before" | "after" | null) {
-        if (!this.dropStrategy) {
-            return;
-        }
-
-        const hoverTokens = this.dropStrategy.hoverClass.split(/\s+/).filter(Boolean);
-        const placementTokens = ["drag-before", "drag-after"];
-
-        for (const node of this.indexToNode.values()) {
-            for (const token of hoverTokens) {
-                node.classList.remove(token);
-            }
-            for (const token of placementTokens) {
-                node.classList.remove(token);
-            }
-        }
-
-        if (!target) {
-            return;
-        }
-
-        for (const token of hoverTokens) {
-            target.classList.add(token);
-        }
-
-        if (placement) {
-            target.classList.add(placement === "before" ? "drag-before" : "drag-after");
-        }
-    }
-
-    private getDropTarget(event: DragEvent): HTMLElement | null {
-        if (!this.dropStrategy) {
-            return null;
-        }
-
-        const target = event.target as HTMLElement;
-        const item = target.closest('[role="listitem"]') as HTMLElement | null;
-        if (!item) {
-            return null;
-        }
-
-        const { dragHandleSelector } = this.dropStrategy;
-        if (dragHandleSelector && !target.closest(dragHandleSelector)) {
-            return null;
-        }
-
-        return item;
-    }
-
-    private getPointerPlacement(target: HTMLElement, clientY: number) {
-        const rect = target.getBoundingClientRect();
-        if (rect.height <= 0) {
-            return null;
-        }
-
-        const pointerPosition = (clientY - rect.top) / rect.height;
-        if (pointerPosition <= 0.25) {
-            return "before";
-        }
-
-        if (pointerPosition >= 0.75) {
-            return "after";
-        }
-
-        return null;
-    }
-
-    private setDraggedItem(item: HTMLElement | null) {
-        if (this.draggedItem) {
-            this.draggedItem.classList.remove(ListView.DRAGGING_ITEM_CLASS);
-        }
-
-        this.draggedItem = item;
-
-        if (this.draggedItem) {
-            this.draggedItem.classList.add(ListView.DRAGGING_ITEM_CLASS);
-        }
-    }
 
     @event("dragenter")
     onDragEnter(e: DragEvent) {
-        if (!this.dropStrategy) {
-            return;
-        }
-
-        const target = this.getDropTarget(e);
-        if (!target) {
-            return;
-        }
-
-        const index = this.getInstanceId(target);
-        if (index === null) {
-            return;
-        }
-
-        const context = getDragOverContext(target, e.clientX, e.clientY);
-        this.dragOverContext = context;
-        this.setDragCue(context.target, context.placement);
-        this.dropStrategy.onDragEnter(e, this);
+        this.dragHandler.onDragEnter(e);
     }
 
     @event("dragstart")
     onDragStart(e: DragEvent) {
-        if (!this.dropStrategy) {
-            return;
-        }
-
-        const target = e.target as HTMLElement;
-        const item = target.closest('[role="listitem"]') as HTMLElement | null;
-        const itemIndex = item ? this.getInstanceId(item) : null;
-        if (itemIndex === null) {
-            return;
-        }
-
-        this.dragging = true;
-        this.setDraggedItem(item);
-
-        const sourceListId = this.id || "list-view";
-        this.dropStrategy.setPayload(e, sourceListId, itemIndex);
+        this.dragHandler.onDragStart(e);
     }
 
     @event("dragover")
     onDragOver(e: DragEvent) {
-        if (!this.dropStrategy) {
-            return;
-        }
-
-        const target = this.getDropTarget(e);
-        if (!target) {
-            return;
-        }
-
-        const index = this.getInstanceId(target);
-        if (index === null) {
-            return;
-        }
-
-        e.preventDefault();
-
-        if (index !== this.dragOverContext?.index) {
-            const context = getDragOverContext(target, e.clientX, e.clientY);
-            this.dragOverContext = context;
-            this.setDragCue(context.target, context.placement);
-        } else if (this.dragOverContext) {
-            const placement = this.getPointerPlacement(target, e.clientY);
-            if (placement && placement !== this.dragOverContext.placement) {
-                this.dragOverContext.placement = placement;
-                this.setDragCue(target, placement);
-            } else if (!placement) {
-                this.setDragCue(null, null);
-            }
-        }
-
-        this.dropStrategy.onDragOver(e, this, index);
+        this.dragHandler.onDragOver(e);
     }
 
     @event("drop")
     onDrop(e: DragEvent) {
-        if (!this.dropStrategy || !this.dropStrategy.supports(e) || !this.listMode) {
-            return;
-        }
-
-        const target = this.getDropTarget(e);
-        const context = target ? this.dragOverContext ?? getDragOverContext(target, e.clientX, e.clientY) : null;
-        console.log(context)
-        if (!context) {
-            return;
-        }
-        const index = context.index + (context.placement !== "after" ? -1 : 0);
-        console.log(index)
-        const data = this.dropStrategy.onDrop(e, this, index);
-
-        if (!data) {
-            return;
-        }
-
-        e.preventDefault();
-        this.lastDropAccepted = true;
-        this.setDragCue(null, null);
+        this.dragHandler.onDrop(e);
     }
 
     @event("dragleave")
     onDragLeave(e: DragEvent) {
-        if (!this.dropStrategy) {
-            return;
-        }
-
-        this.dropStrategy.onDragLeave(e, this);
+        this.dragHandler.onDragLeave(e);
     }
 
     @event("dragend")
     onDragEnd(e: DragEvent) {
-        if (!this.dropStrategy) {
-            return;
-        }
-
-        this.dragging = false;
-        this.setDraggedItem(null);
-
-        const wasAccepted = this.lastDropAccepted;
-        this.lastDropAccepted = false;
-        this.dragOverContext = null;
-
-        // Clean up drag styling
-        this.setDragCue(null, null);
-
-        this.dropStrategy.onDragEnd(e, this, wasAccepted);
+        this.dragHandler.onDragEnd(e);
     }
 
     swap(index1: number, index2: number, animate = false) {

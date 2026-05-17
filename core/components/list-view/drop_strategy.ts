@@ -28,6 +28,8 @@ export class DropStrategy {
     mimeType = "application/x-list-view-item";
     /** CSS class toggled on valid drop targets while dragging. */
     hoverClass = "drag-over";
+    /** CSS class toggled on the dragged item. */
+    draggingClass = "dragging";
 
     /** Called when a drag enters a supported drop target. */
     onDragEnter = (event: DragEvent, listView: ListView) => {};
@@ -100,9 +102,77 @@ export class DropStrategy {
         return payload ? this.decodePayload(payload) : null;
     }
 
-    /** Returns whether the drag event contains a payload for this strategy's MIME type. */
+        
     supports(event: DragEvent) {
         const dataTransfer = event.dataTransfer;
-        return !!dataTransfer && Array.from(dataTransfer.types).includes(this.mimeType);
+        return !!dataTransfer && dataTransfer.types.includes(this.mimeType);
+    }
+}
+
+export class DefaultStrategy extends DropStrategy {
+	constructor(init?: Partial<DropStrategy>) {
+		super({
+			hoverClass: "drag-over drag-default",
+			onDrop: (event, listView, dropIndex) => this.performDrop(event, listView, dropIndex),
+			...init
+		});
+	}
+
+	protected performDrop(event: DragEvent, listView: ListView, dropIndex: number | null): DropInsertion {
+		const payload = this.getPayload(event);
+		if (!payload || dropIndex === null) return null;
+
+		const sourceListView = document.getElementById(payload.sourceListId) as ListView | null;
+		const sourceList = sourceListView?.list as any[];
+		const targetList = listView.list as any[];
+
+		if (!Array.isArray(sourceList) || !Array.isArray(targetList)) return null;
+
+		const item = sourceList[payload.itemIndex];
+		if (item === undefined) return null;
+
+		// Reorder within same list
+		if (sourceListView === listView) {
+			if (payload.itemIndex < 0 || payload.itemIndex >= sourceList.length || 
+			    payload.itemIndex === dropIndex || payload.itemIndex + 1 === dropIndex) {
+				return null;
+			}
+
+			const targetIndex = payload.itemIndex < dropIndex ? dropIndex - 1 : dropIndex;
+			const nextList = sourceList.slice();
+			nextList.splice(payload.itemIndex, 1);
+			nextList.splice(Math.max(0, targetIndex), 0, item);
+			
+			sourceListView.list = nextList;
+			sourceListView.size = nextList.length;
+			return { index: Math.max(0, targetIndex), data: item };
+		}
+
+		// Insert into different list
+		targetList.splice(Math.max(0, dropIndex), 0, item);
+		return { index: Math.max(0, dropIndex), data: item };
+	};
+}
+
+export class MoveStrategy extends DefaultStrategy {
+    protected performDrop(event: DragEvent, listView: ListView, dropIndex: number | null): DropInsertion {
+        const insertion = super.performDrop(event, listView, dropIndex);
+        const payload = this.getPayload(event);
+
+        console.log("MoveStrategy.performDrop", { insertion, payload });
+        if (!insertion || !payload) {
+            return null;
+        }
+
+        const sourceListView = document.getElementById(payload.sourceListId) as ListView | null;
+        const sourceList = sourceListView?.list as any[];
+
+        if (!Array.isArray(sourceList)) {
+            return null;
+        }
+
+        sourceList.splice(payload.itemIndex, 1);
+
+        return insertion;
     }
 }
